@@ -1,0 +1,158 @@
+openapi: 3.0.3
+info:
+  title: Elder Care Phone — Query API
+  version: 1.0.0
+  description: Caregiver app reads patient memory and status here.
+
+servers:
+  - url: http://localhost:8000
+
+paths:
+  /query/status:
+    get:
+      summary: Current device / emergency status
+      operationId: queryStatus
+      responses:
+        '200':
+          description: Status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /query/events:
+    get:
+      summary: Paginated events
+      operationId: queryEvents
+      parameters:
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/EventType' }
+        - name: since
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, maximum: 200 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventRow'
+
+  /query/search:
+    get:
+      summary: FTS5 search over transcript + summary
+      operationId: querySearch
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchHit'
+
+  /query/medical:
+    get:
+      summary: Medical timeline rows
+      operationId: queryMedical
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [medication, appointment, vital, preference]
+        - name: since
+          in: query
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MedicalRow'
+
+  /query/ack-emergency:
+    post:
+      summary: Caregiver acknowledges active emergency
+      operationId: ackEmergency
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_id]
+              properties:
+                event_id: { type: string }
+                note: { type: string }
+      responses:
+        '200':
+          description: Ack recorded; ControlCommand sent to RPi
+
+  /query/chat:
+    get:
+      summary: SSE stream — Gemma RAG over retrieved memories
+      operationId: queryChat
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: text/event-stream
+
+components:
+  schemas:
+    EventType:
+      type: string
+      enum: [SPEECH, FALL, EMERGENCY, OBJECT, REMINDER, VITALS, SYSTEM]
+    StatusResponse:
+      type: object
+      properties:
+        last_event_ts: { type: integer, format: int64, nullable: true }
+        event_count_last_min: { type: integer }
+        fsm_state: { type: string }
+        active_emergency: { type: boolean }
+    EventRow:
+      type: object
+      properties:
+        event_id: { type: string }
+        ts: { type: integer }
+        type: { type: string }
+        priority: { type: string }
+        raw_json: { type: string }
+        transcript: { type: string, nullable: true }
+        summary: { type: string, nullable: true }
+        entities: { type: string, nullable: true }
+    SearchHit:
+      type: object
+      properties:
+        event_id: { type: string }
+        ts: { type: integer }
+        type: { type: string }
+        snippet: { type: string }
+        summary: { type: string, nullable: true }
+    MedicalRow:
+      type: object
+      properties:
+        id: { type: integer }
+        event_id: { type: string, nullable: true }
+        category: { type: string }
+        label: { type: string }
+        value: { type: string, nullable: true }
+        ts: { type: integer }
