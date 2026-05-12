@@ -1,0 +1,122 @@
+openapi: 3.0.3
+info:
+  title: Elder Care Phone — Intake API
+  version: 1.0.0
+  description: RPi and mock tools POST EventEnvelopes here.
+
+servers:
+  - url: http://localhost:8000
+    description: Local phone core
+
+paths:
+  /health:
+    get:
+      summary: Liveness
+      operationId: health
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /intake/event:
+    post:
+      summary: Ingest one EventEnvelope (JSON body mirrors proto fields)
+      operationId: intakeEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventEnvelope'
+      responses:
+        '200':
+          description: Stored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stored:
+                    type: boolean
+                  event_id:
+                    type: string
+        '409':
+          description: Duplicate event_id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  duplicate:
+                    type: boolean
+        '422':
+          description: Validation error
+
+  /intake/command-ack:
+    post:
+      summary: Acknowledge outbound command delivery (optional telemetry)
+      operationId: commandAck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [command_id]
+              properties:
+                command_id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+
+components:
+  schemas:
+    EventType:
+      type: string
+      enum: [SPEECH, FALL, EMERGENCY, OBJECT, REMINDER, VITALS, SYSTEM]
+    Priority:
+      type: string
+      enum: [LOW, NORMAL, HIGH, CRITICAL]
+    SpeechPayload:
+      type: object
+      required: [transcript]
+      properties:
+        transcript: { type: string }
+        confidence: { type: number, format: float }
+        duration_sec: { type: number, format: float }
+    FallPayload:
+      type: object
+      properties:
+        accel_magnitude: { type: number, format: float }
+        gyro_magnitude: { type: number, format: float }
+        button_pressed: { type: boolean }
+    ObjectPayload:
+      type: object
+      properties:
+        label: { type: string }
+        confidence: { type: number, format: float }
+        keyframe: { type: string, description: base64 JPEG optional }
+    EmergencyPayload:
+      type: object
+      properties:
+        trigger_source: { type: string }
+        fsm_state: { type: string }
+    EventEnvelope:
+      type: object
+      required: [event_id, ts, type, priority, payload]
+      properties:
+        event_id: { type: string, format: uuid }
+        ts: { type: integer, format: int64, description: Unix ms UTC }
+        type: { $ref: '#/components/schemas/EventType' }
+        priority: { $ref: '#/components/schemas/Priority' }
+        payload:
+          type: object
+          description: Type-specific fields (speech/fall/object/emergency)

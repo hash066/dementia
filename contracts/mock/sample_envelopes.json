@@ -1,0 +1,44 @@
+[
+  {
+    "event_id": "11111111-1111-4111-8111-111111111111",
+    "ts": 1700000000000,
+    "type": "SPEECH",
+    "priority": "NORMAL",
+    "payload": {
+      "transcript": "I took my aspirin this morning with breakfast.",
+      "confidence": 0.95,
+      "duration_sec": 2.1
+    }
+  },
+  {
+    "event_id": "22222222-2222-4222-8222-222222222222",
+    "ts": 1700000060000,
+    "type": "FALL",
+    "priority": "CRITICAL",
+    "payload": {
+      "accel_magnitude": 3.2,
+      "gyro_magnitude": 180.0,
+      "button_pressed": false
+    }
+  },
+  {
+    "event_id": "33333333-3333-4333-8333-333333333333",
+    "ts": 1700000120000,
+    "type": "EMERGENCY",
+    "priority": "CRITICAL",
+    "payload": {
+      "trigger_source": "button",
+      "fsm_state": "ALERT"
+    }
+  },
+  {
+    "event_id": "44444444-4444-4444-8444-444444444444",
+    "ts": 1700000180000,
+    "type": "OBJECT",
+    "priority": "LOW",
+    "payload": {
+      "label": "person",
+      "confidence": 0.88
+    }
+  }
+]

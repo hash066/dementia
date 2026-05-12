@@ -1,0 +1,55 @@
+syntax = "proto3";
+package eldercare;
+
+enum EventType {
+  SPEECH       = 0;
+  FALL         = 1;
+  EMERGENCY    = 2;
+  OBJECT       = 3;
+  REMINDER     = 4;
+  VITALS       = 5;
+  SYSTEM       = 6;
+}
+
+enum Priority {
+  LOW      = 0;
+  NORMAL   = 1;
+  HIGH     = 2;
+  CRITICAL = 3;
+}
+
+message SpeechPayload {
+  string transcript   = 1;
+  float  confidence   = 2;
+  float  duration_sec = 3;
+}
+
+message FallPayload {
+  float accel_magnitude = 1;
+  float gyro_magnitude  = 2;
+  bool  button_pressed  = 3;
+}
+
+message ObjectPayload {
+  string label       = 1;
+  float  confidence  = 2;
+  bytes  keyframe    = 3;
+}
+
+message EmergencyPayload {
+  string trigger_source = 1;
+  string fsm_state      = 2;
+}
+
+message EventEnvelope {
+  string    event_id = 1;
+  int64     ts       = 2;
+  EventType type     = 3;
+  Priority  priority = 4;
+  oneof payload {
+    SpeechPayload    speech    = 10;
+    FallPayload      fall      = 11;
+    ObjectPayload    object    = 12;
+    EmergencyPayload emergency = 13;
+  }
+}

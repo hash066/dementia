@@ -1,0 +1,17 @@
+syntax = "proto3";
+package eldercare;
+
+enum CommandType {
+  SPEAK          = 0;
+  FSM_UPDATE     = 1;
+  ALERT_NOTIFY   = 2;
+  ACK_EMERGENCY  = 3;
+}
+
+message ControlCommand {
+  string      command_id  = 1;
+  int64       ts          = 2;
+  CommandType type        = 3;
+  string      text        = 4;
+  string      fsm_state   = 5;
+}

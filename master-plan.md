@@ -113,7 +113,7 @@ elder-care/
 │           ├── domain/                   ← models, use cases
 │           └── ui/                       ← theme, screens, components
 │
-├── docs/
+└── docs/
     ├── 01-overall-system.md
     ├── 02-esp32-ingestion.md
     ├── 03-rpi-edge-runtime.md

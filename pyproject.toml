@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eldercare-phone"
+version = "0.1.0"
+description = "Person 2 phone core — intake, Gemma, SQLCipher/FTS5, query API"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "httpx>=0.27",
+    "protobuf>=5.0",
+    "pybloom-live>=4.0.0",
+]
+
+[project.optional-dependencies]
+sqlcipher = ["apsw-sqlite3mc>=2.3.0"]
+gemma = ["llama-cpp-python>=0.2.90"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "mypy>=1.10",
+    "types-protobuf",
+]
+
+[tool.setuptools.packages.find]
+include = ["phone*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["phone/tests"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["phone"]
+exclude = ["phone/tests/"]
