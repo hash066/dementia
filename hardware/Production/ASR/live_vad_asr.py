@@ -6,8 +6,16 @@ import subprocess
 import sys
 import time
 import wave
+from pathlib import Path
 
 import vosk
+
+CURRENT_DIR = Path(__file__).resolve().parent
+PRODUCTION_DIR = CURRENT_DIR.parent
+if str(PRODUCTION_DIR) not in sys.path:
+    sys.path.insert(0, str(PRODUCTION_DIR))
+
+from Shared.event_envelope_emitter import EventEnvelopeEmitter
 
 SAMPLE_RATE = 16000
 CHUNK_MS = 1000
@@ -42,6 +50,7 @@ def main() -> int:
     parser.add_argument("--model", default="model", help="Path to Vosk model directory")
     parser.add_argument("--out", default="transcript.txt", help="Output transcript file")
     parser.add_argument("--wav", default="", help="Optional WAV output path")
+    parser.add_argument("--emit", default="", help="Phone intake base URL, e.g. http://127.0.0.1:8000")
     args = parser.parse_args()
 
     if not os.path.isdir(args.model):
@@ -70,6 +79,8 @@ def main() -> int:
         wav_f.setsampwidth(BYTES_PER_SAMPLE)
         wav_f.setframerate(SAMPLE_RATE)
 
+    emitter = EventEnvelopeEmitter(args.emit) if args.emit else None
+
     with open(args.out, "a", encoding="utf-8") as out_f:
         print("Listening... press Ctrl+C to stop")
         while ffmpeg.poll() is None:
@@ -90,6 +101,8 @@ def main() -> int:
                         if text:
                             out_f.write(text + "\n")
                             out_f.flush()
+                            if emitter:
+                                emitter.emit("SPEECH", {"transcript": text})
                         else:
                             out_f.write(result + "\n")
                             out_f.flush()
@@ -107,6 +120,9 @@ def main() -> int:
                             sys.stdout.flush()
                     except json.JSONDecodeError:
                         pass
+
+    if emitter:
+        emitter.close()
 
     if wav_f:
         wav_f.close()

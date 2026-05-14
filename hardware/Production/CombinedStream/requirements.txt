@@ -1,0 +1,4 @@
+protobuf
+pyserial
+grpcio-tools
+httpx

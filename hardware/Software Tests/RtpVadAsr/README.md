@@ -26,6 +26,12 @@ Download a Vosk model and unzip it into `./model`:
 python live_vad_asr.py --sdp rtp_pcm.sdp --model model --out transcript.txt
 ```
 
+To also emit EventEnvelopes to the phone intake:
+
+```
+python live_vad_asr.py --sdp rtp_pcm.sdp --model model --out transcript.txt --emit http://127.0.0.1:8000
+```
+
 To also save raw audio to WAV while transcribing:
 
 ```
