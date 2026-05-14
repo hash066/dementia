@@ -1,0 +1,6 @@
+ImuButtonFrame.accel_x int_size: 32
+ImuButtonFrame.accel_y int_size: 32
+ImuButtonFrame.accel_z int_size: 32
+ImuButtonFrame.gyro_x int_size: 32
+ImuButtonFrame.gyro_y int_size: 32
+ImuButtonFrame.gyro_z int_size: 32
