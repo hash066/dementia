@@ -76,6 +76,8 @@ python live_vad_asr.py --sdp rtp_pcm.sdp --model model --out transcript.txt --wa
 
 The script keeps listening until you press Ctrl+C. It appends transcripts to `transcript.txt`.
 
+The terminal may show live partial words before Vosk finalizes them. On shutdown, the script flushes the final buffered result, or the last visible partial if no final result is available yet. This keeps the end of a spoken sentence from disappearing when you stop the script soon after speaking.
+
 ## Beginner test checklist
 
 Use this if you want to test the full chain with real devices.
@@ -104,6 +106,7 @@ Use this if you want to test the full chain with real devices.
 ## Troubleshooting
 
 - If nothing transcribes, first check that `ffmpeg` can open the SDP file.
+- If the terminal shows words but `transcript.txt` looks shorter, keep speaking until the phrase finalizes or press Ctrl+C once; the script flushes the final/last partial text during shutdown.
 - If transcripts appear but the phone stays empty, verify the `--emit` URL and that the phone server is reachable from the Pi.
 - If the phone returns 422, the envelope shape or timestamp is wrong.
 - If the model path is wrong, run `python download_vosk_model.py` and then retry.

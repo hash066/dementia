@@ -23,6 +23,16 @@ BYTES_PER_SAMPLE = 2
 CHUNK_BYTES = SAMPLE_RATE * CHUNK_MS // 1000 * BYTES_PER_SAMPLE
 
 
+def extract_text(result_json: str, field: str = "text") -> str:
+    if not result_json:
+        return ""
+    try:
+        data = json.loads(result_json)
+    except json.JSONDecodeError:
+        return ""
+    return str(data.get(field, "")).strip()
+
+
 def start_ffmpeg(sdp_path: str) -> subprocess.Popen:
     cmd = [
         "ffmpeg",
@@ -80,6 +90,19 @@ def main() -> int:
         wav_f.setframerate(SAMPLE_RATE)
 
     emitter = EventEnvelopeEmitter(args.emit) if args.emit else None
+    last_partial_text = ""
+    last_written_text = ""
+
+    def write_and_emit(text: str, out_f) -> None:
+        nonlocal last_written_text
+        text = text.strip()
+        if not text or text == last_written_text:
+            return
+        out_f.write(text + "\n")
+        out_f.flush()
+        last_written_text = text
+        if emitter:
+            emitter.emit("SPEECH", {"transcript": text})
 
     with open(args.out, "a", encoding="utf-8") as out_f:
         print("Listening... press Ctrl+C to stop")
@@ -95,31 +118,25 @@ def main() -> int:
             if rec.AcceptWaveform(chunk):
                 result = rec.Result()
                 if result:
-                    try:
-                        data = json.loads(result)
-                        text = data.get("text", "").strip()
-                        if text:
-                            out_f.write(text + "\n")
-                            out_f.flush()
-                            if emitter:
-                                emitter.emit("SPEECH", {"transcript": text})
-                        else:
-                            out_f.write(result + "\n")
-                            out_f.flush()
-                    except json.JSONDecodeError:
-                        out_f.write(result + "\n")
-                        out_f.flush()
+                    text = extract_text(result)
+                    write_and_emit(text, out_f)
+                    last_partial_text = ""
             else:
                 partial = rec.PartialResult()
                 if partial:
-                    try:
-                        data = json.loads(partial)
-                        ptext = data.get("partial", "").strip()
-                        if ptext:
-                            sys.stdout.write("\r" + ptext[:80])
-                            sys.stdout.flush()
-                    except json.JSONDecodeError:
-                        pass
+                    ptext = extract_text(partial, field="partial")
+                    if ptext:
+                        last_partial_text = ptext
+                        sys.stdout.write("\r" + ptext[:80])
+                        sys.stdout.flush()
+
+        final_text = extract_text(rec.FinalResult())
+        if final_text:
+            write_and_emit(final_text, out_f)
+            print(f"\nFinal transcript flushed: {final_text}")
+        elif last_partial_text:
+            write_and_emit(last_partial_text, out_f)
+            print(f"\nPartial transcript flushed: {last_partial_text}")
 
     if emitter:
         emitter.close()
