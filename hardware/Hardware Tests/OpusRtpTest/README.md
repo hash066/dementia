@@ -36,3 +36,4 @@ Goal: stream stereo mic audio from ESP32 to Raspberry Pi over UDP/RTP using PCM 
 - RTP payload type 96 is used for PCM (L16).
 - Frame size is 10 ms (160 samples at 16 kHz).
 - For a clean first pass, keep the Pi and ESP32 on the same Wi-Fi network.
+- The ESP32 will retry Wi-Fi connect if the link drops.

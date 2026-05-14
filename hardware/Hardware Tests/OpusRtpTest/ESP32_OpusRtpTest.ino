@@ -51,10 +51,18 @@ void setupI2S() {
 }
 
 void waitForWiFi() {
+  if (WiFi.status() == WL_CONNECTED) {
+    return;
+  }
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
 
+  uint32_t start = millis();
   while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - start > 10000) {
+      break;
+    }
     delay(200);
   }
 }
@@ -84,6 +92,12 @@ void setup() {
 }
 
 void loop() {
+  if (WiFi.status() != WL_CONNECTED) {
+    waitForWiFi();
+    delay(100);
+    return;
+  }
+
   int32_t i2s_raw[I2S_READ_SAMPLES];
   int16_t pcm16[I2S_READ_SAMPLES];
   size_t bytesRead = 0;
