@@ -8,3 +8,4 @@ venv/
 *.egg-info/
 dist/
 build/
+hardware/Hardware Tests/OpusRtpTest/WIFI_CONFIG.h
