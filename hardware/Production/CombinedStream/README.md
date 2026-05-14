@@ -111,17 +111,39 @@ Follow this order if you are testing with real hardware for the first time.
 
 ## Raspberry Pi setup
 
-1) Install deps (venv recommended):
-   - pip install -r requirements.txt
+1) Create and activate a venv:
 
-2) Generate Python protobuf:
-   - python -m grpc_tools.protoc -I. --python_out=. imu_button.proto
+   ```
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
 
-3) Run listener:
-   - python rpi_listener.py
+2) Install deps:
 
-4) Run listener with phone forwarding:
-   - python rpi_listener.py --emit http://<phone-ip>:8000
+   ```
+   pip install -r requirements.txt
+   ```
+
+3) Generate Python protobuf:
+
+   ```
+   python -m grpc_tools.protoc -I. --python_out=. imu_button.proto
+   ls imu_button_pb2.py
+   ```
+
+   `rpi_listener.py` imports `imu_button_pb2.py`, so this generation step is required after a fresh clone. If you see `ModuleNotFoundError: No module named 'imu_button_pb2'`, run this command again from this folder.
+
+4) Run listener:
+
+   ```
+   python rpi_listener.py
+   ```
+
+5) Run listener with phone forwarding:
+
+   ```
+   python rpi_listener.py --emit http://<phone-ip>:8000
+   ```
 
 Useful options:
 

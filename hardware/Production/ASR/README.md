@@ -29,8 +29,28 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Download a Vosk model and unzip it into `./model` (not tracked in git):
-- https://alphacephei.com/vosk/models
+Download and unpack the default Vosk model automatically:
+
+```
+python download_vosk_model.py
+```
+
+This installs `vosk-model-small-en-us-0.15` into `./model`, which is the default path used by `live_vad_asr.py`.
+
+To replace an existing model folder:
+
+```
+python download_vosk_model.py --force
+```
+
+Manual fallback, if the script cannot reach the model server:
+
+```
+curl -L -o vosk-model-small-en-us-0.15.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+python -c "import zipfile; zipfile.ZipFile('vosk-model-small-en-us-0.15.zip').extractall('.')"
+rm -rf model
+mv vosk-model-small-en-us-0.15 model
+```
 
 If you are just testing on a laptop first, you can still follow the same steps as long as ffmpeg can open `rtp_pcm.sdp` and the model folder exists.
 
@@ -65,8 +85,8 @@ Use this if you want to test the full chain with real devices.
 	- Confirm `http://<phone-ip>:8000/health` returns `{"status":"ok"}`.
 
 2. Put the Vosk model in place.
-	- Create a `model` folder next to `live_vad_asr.py`.
-	- Unzip the Vosk model contents into that folder.
+	- Run `python download_vosk_model.py`.
+	- Confirm `model/README` exists next to `live_vad_asr.py`.
 
 3. Make sure the Pi can see the ESP32 RTP stream.
 	- Flash the ESP32 with the audio stream firmware.
@@ -86,7 +106,7 @@ Use this if you want to test the full chain with real devices.
 - If nothing transcribes, first check that `ffmpeg` can open the SDP file.
 - If transcripts appear but the phone stays empty, verify the `--emit` URL and that the phone server is reachable from the Pi.
 - If the phone returns 422, the envelope shape or timestamp is wrong.
-- If the model path is wrong, the script exits immediately before listening.
+- If the model path is wrong, run `python download_vosk_model.py` and then retry.
 
 ## Notes
 
