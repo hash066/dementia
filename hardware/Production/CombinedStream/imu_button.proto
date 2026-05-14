@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package imu_button;
+
+message ImuButtonFrame {
+  uint32 ts_ms = 1;
+  bool button_pressed = 2;
+  bool button_edge = 3; // true on rising edge
+
+  // Raw MPU6050 readings
+  int32 accel_x = 4;
+  int32 accel_y = 5;
+  int32 accel_z = 6;
+  int32 gyro_x = 7;
+  int32 gyro_y = 8;
+  int32 gyro_z = 9;
+}

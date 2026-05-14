@@ -31,7 +31,7 @@ MPU6050: SDA=GPIO21, SCL=GPIO22
      - pip install nanopb
 
    - Generate:
-     - python -m nanopb_generator imu_button.proto
+     - py -m nanopb.generator.nanopb_generator imu_button.proto
 
    This produces imu_button.pb.h and imu_button.pb.c.
 

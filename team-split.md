@@ -60,9 +60,9 @@ P2 and P3 work off a synthetic event injector script until integration week. No 
 - TTS/speaker action executor (piper-tts or espeak)
 
 ### Deliverables
-- [x] ESP32 streaming PCM audio to RPi over RTP
-- [ ] IMU + button events reaching RPi as protobuf over UART
-- [ ] VAD + ASR pipeline emitting SPEECH EventEnvelopes
+- [x] ESP32 streaming Opus audio to RPi over RTP
+- [x] IMU + button events reaching RPi as protobuf over UART
+- [x] VAD + ASR pipeline emitting SPEECH EventEnvelopes
 - [ ] Fall / emergency FSM emitting EMERGENCY EventEnvelopes
 - [ ] EventEnvelope stream reaching Phone endpoint
 

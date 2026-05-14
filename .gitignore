@@ -9,3 +9,11 @@ venv/
 dist/
 build/
 hardware/Hardware Tests/OpusRtpTest/WIFI_CONFIG.h
+hardware/Production/ASR/model/
+hardware/Production/ASR/*.wav
+hardware/Production/ASR/*.zip
+hardware/Production/ASR/transcript.txt
+hardware/Software Tests/RtpVadAsr/model/
+hardware/Software Tests/RtpVadAsr/*.wav
+hardware/Software Tests/RtpVadAsr/*.zip
+hardware/Software Tests/RtpVadAsr/transcript.txt

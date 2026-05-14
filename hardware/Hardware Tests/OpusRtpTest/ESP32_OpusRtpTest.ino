@@ -82,6 +82,16 @@ void buildRtpHeader(uint8_t* hdr, uint8_t payloadType, uint16_t seq, uint32_t ts
   hdr[11] = ssrc & 0xFF;
 }
 
+void writePcmBigEndian(const int16_t* pcm, size_t samples) {
+  uint8_t be[ I2S_READ_SAMPLES * 2 ];
+  for (size_t i = 0; i < samples; i++) {
+    uint16_t v = (uint16_t)pcm[i];
+    be[i * 2] = (uint8_t)(v >> 8);
+    be[i * 2 + 1] = (uint8_t)(v & 0xFF);
+  }
+  udp.write(be, samples * 2);
+}
+
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -116,7 +126,7 @@ void loop() {
 
   udp.beginPacket(RPI_IP, RPI_PORT);
   udp.write(rtp, 12);
-  udp.write((uint8_t*)pcm16, FRAME_SAMPLES * CHANNELS * 2);
+  writePcmBigEndian(pcm16, FRAME_SAMPLES * CHANNELS);
   udp.endPacket();
 
   rtp_ts += FRAME_SAMPLES;
