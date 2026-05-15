@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.sementia.caregiver.ui.HubViewModel
 import com.sementia.caregiver.ui.screens.*
 
 sealed class Screen(val route: String) {
@@ -16,36 +17,54 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun NavGraph(navController: NavHostController, startDestination: String = Screen.Home.route) {
+fun NavGraph(
+    navController: NavHostController,
+    hubViewModel: HubViewModel,
+    startDestination: String,
+) {
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
     ) {
         composable(Screen.Auth.route) {
-            AuthScreen(onAuthenticated = {
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Auth.route) { inclusive = true }
-                }
-            })
+            AuthScreen(
+                hubViewModel = hubViewModel,
+                onAuthenticated = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Auth.route) { inclusive = true }
+                    }
+                },
+            )
         }
         composable(Screen.Home.route) {
             HomeScreen(
                 onNavigateToChat = { navController.navigate(Screen.Chat.route) },
                 onNavigateToTimeline = { navController.navigate(Screen.Timeline.route) },
-                onNavigateToMedical = { navController.navigate(Screen.Medical.route) }
+                onNavigateToMedical = { navController.navigate(Screen.Medical.route) },
             )
         }
         composable(Screen.Timeline.route) {
-            TimelineScreen()
+            TimelineScreen(hubViewModel = hubViewModel)
         }
         composable(Screen.Chat.route) {
-            ChatScreen()
+            ChatScreen(hubViewModel = hubViewModel)
         }
         composable(Screen.Medical.route) {
             MedicalDashboardScreen()
         }
         composable(Screen.Settings.route) {
-            SettingsScreen()
+            SettingsScreen(
+                hubViewModel = hubViewModel,
+                onForgotHub = {
+                    hubViewModel.disconnect()
+                    navController.navigate(Screen.Auth.route) {
+                        popUpTo(navController.graph.id) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                },
+            )
         }
     }
 }

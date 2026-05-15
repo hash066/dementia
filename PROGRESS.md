@@ -51,6 +51,8 @@ This project is an **elder-care monitoring system** split across three roles: se
 | **phone/intake/__init__.py** | Package marker for the intake folder. | — |
 | **phone/gemma/client.py** | Loads the Gemma AI model if a model file path is set; otherwise returns empty so stubs run. | Used by classifier, summarizer, and chat when you want real AI. |
 | **phone/gemma/router.py** | Decides what to do per event type: e.g. speech → summarise + maybe medical row; emergency → mark alert + “speak” command. | Called from `intake/server.py` after validation; results drive `upsert.py` and `command_emitter.py`. |
+| **phone/gemma/speech_routing.py** | **Keyword / pattern gate** for SPEECH: if transcript looks like symptoms, meds, or distress → use full **specialist** path (classifier + summarizer, future Unsloth JSON). Otherwise **soft empathy path** (no heavy triage). | Imported by `router.py` for SPEECH only. |
+| **phone/gemma/empathy.py** | **Template caregiver one-liners** for the soft path (greeting, loneliness, thanks, generic chat) — no diagnosis, no dosing. | Used by `router.py` when `speech_routing.needs_specialist_triage` is false. |
 | **phone/gemma/classifier.py** | Asks the AI (or a simple keyword fallback) to extract entities and risk hints from text. | Used for SPEECH and OBJECT paths inside `router.py`. |
 | **phone/gemma/summarizer.py** | Asks the AI (or a short text fallback) to write a one-line caregiver summary. | Used for SPEECH inside `router.py`. |
 | **phone/gemma/__init__.py** | Package marker for Gemma-related code. | — |
@@ -73,6 +75,7 @@ This project is an **elder-care monitoring system** split across three roles: se
 | **phone/tests/test_intake.py** | Tests: health, save speech + search, duplicate rejection, emergency command, ack emergency. | Hits `server.py` end-to-end. |
 | **phone/tests/test_memory.py** | Tests listing events after saving a system event. | Uses query + intake together. |
 | **phone/tests/test_gemma.py** | Tests that the chat endpoint returns a streaming response. | Uses `/query/chat` after a simple intake. |
+| **phone/tests/test_speech_routing.py** | Unit tests for specialist gate + empathy summary; HTTP checks `triage_route` empathy vs specialist on intake. | Covers `speech_routing.py`, `empathy.py`, and `router.py` SPEECH branch. |
 
 ### `.github/workflows/`
 
@@ -89,7 +92,7 @@ This project is an **elder-care monitoring system** split across three roles: se
 1. **Sensors on the home device (Raspberry Pi — Person 1, not fully in this repo yet)** notice something: speech transcribed, motion, button press, etc.
 2. The Pi builds an **event envelope** (ID, time, type, details) and **POSTs it over the home network** to the phone core at something like `http://<phone-or-home-server>:8000/intake/event` — today as **JSON**; the team contract also allows **Protobuf** on the wire for smaller/faster payloads once intake decodes it.
 3. **Phone core** (`server.py`) receives the body, **validates** it (`validator.py`), checks it is not a **duplicate** (`deduper.py`).
-4. **Router** (`router.py` + Gemma helpers) decides enrichment: e.g. speech → summary + tags; fall/emergency → mark “active emergency” and queue a **speak** command for the Pi.
+4. **Router** (`router.py` + Gemma helpers) decides enrichment. For **SPEECH**, the agreed design is **specialist-first with a rule gate**: if the transcript matches symptom/med/distress patterns → run full classifier + summarizer (where Unsloth will plug in later); else → store a **short template caregiver summary** (empathy path) without running triage JSON. Fall/emergency still mark “active emergency” and queue **speak** for the Pi.
 5. **Database** (`db.py` + `upsert.py`) saves the event and updates the **search index** (`fts.py`) so text is findable later.
 6. **Command emitter** (`command_emitter.py`) may **POST back** to the Pi (e.g. “play this phrase on the speaker”). During dev, **mock_rpi.py** receives that instead of a real Pi.
 7. **Caregiver phone app (Person 3 — not built in this repo yet)** will periodically call **query** endpoints on the same phone core: status (“is there an emergency?”), lists, **search**, medical timeline, and optional **chat** over saved memories (`query/api.py`).
@@ -105,12 +108,11 @@ This project is an **elder-care monitoring system** split across three roles: se
 - **Optional real Gemma** if you install the extra package and set `PHONE_GEMMA_MODEL` to a GGUF file.
 - **Duplicate event protection** and **emergency / ack** flows at the HTTP + DB level.
 - **Mock Pi listener** and **inject script** for local demos.
-- **Automated tests** (`pytest`) and **type checking** (`mypy`) on the `phone` package.
-
----
+- **SPEECH routing:** rule gate (`speech_routing.py`) + template soft path (`empathy.py`) vs specialist classifier path in `router.py` (see §8).
 
 ## 5) What’s not built yet
 
+- **Unsloth specialist LoRA** and optional second orchestrator model (hackathon track).
 - **Person 1:** ESP32 firmware, Pi audio/vision pipelines, real `EventEnvelope` emitter hitting this service from hardware.
 - **Person 3:** Kotlin/Android caregiver app (screens, pairing, notifications) calling the query API.
 - **Production hardening:** auth between app and phone core, TLS on LAN, optional **SQLCipher** install path for encrypted DB in deployment.
@@ -157,3 +159,58 @@ mypy phone
 ```
 
 **Note:** On Windows, use `python` / `py -3` depending on how Python is installed; the commands above assume `python` runs Python 3.11+.
+
+**Interactive API (optional):** With the phone core running, open a browser at **http://127.0.0.1:8000/docs** — FastAPI shows every route; you can click “Try it out” on `GET /health`, `POST /intake/event`, `GET /query/search`, etc.
+
+---
+
+## 7) What to expect, what to test, and how to test
+
+### What you should see when it’s working
+
+- **Terminal 1 (uvicorn):** Lines like `Uvicorn running on http://127.0.0.1:8000` and a log entry each time something hits the API.
+- **Terminal 2 (mock Pi):** When you inject an **EMERGENCY** or **FALL** event (or acknowledge an emergency), you should see **log lines** showing a JSON **command** (e.g. `SPEAK`) — that proves the phone tried to talk to the Pi. If mock Pi is **not** running, the phone still **saves** the event; the command step just **fails quietly** in the background (no crash).
+- **Terminal 3 (inject script):** For each fake event, `200` and a short JSON body like `{"stored":true,"event_id":"..."}`. If you send the **same** event twice, the second time should be **`409`** with `duplicate: true` (by design).
+- **First run:** A folder **`data/`** may appear with **`phone.db`** — that is your local SQLite database (events + search index).
+
+### Quick manual checks (good for a demo)
+
+Do these **while Terminal 1 is running**. You can use the **Swagger UI** (`/docs`) or paste into a browser / use `curl` where noted.
+
+| Step | What to do | What “good” looks like |
+|------|------------|-------------------------|
+| 1 | Open **http://127.0.0.1:8000/health** | JSON: `{"status":"ok"}` |
+| 2 | `GET http://127.0.0.1:8000/query/status` | JSON with `last_event_ts`, `active_emergency`, `fsm_state` (values change after you inject events). |
+| 3 | Inject **SPEECH** (inject script or `/docs` → `POST /intake/event`) | `200` + `stored: true`. Then `GET /query/search?q=aspirin` (or a word from your transcript) — you should get **at least one hit** with a snippet or summary. |
+| 4 | Inject **EMERGENCY** with mock Pi **running** | Mock Pi terminal shows a **ControlCommand** with type **SPEAK**. `GET /query/status` → **`active_emergency`: true**. |
+| 5 | `POST /query/ack-emergency` with body `{"event_id":"any-uuid","note":"cleared"}` | `200`; then **`active_emergency`: false** on status. Mock Pi may show **ACK_EMERGENCY**. |
+| 6 | `GET /query/chat?q=tea` (after injecting speech that mentions “tea”) | Response is **`text/event-stream`** (SSE): many `data: ...` lines in the raw response. |
+
+### Automated tests (regression)
+
+From the project folder:
+
+```text
+pytest phone/tests -q
+```
+
+**What they cover:** health endpoint; save speech + FTS search; duplicate rejection; emergency path issues a command; ack clears emergency flag; listing events; chat stream returns SSE. **All seven should pass** after `pip install -e ".[dev]"`.
+
+### Things that often go wrong
+
+| Problem | What to check |
+|---------|----------------|
+| **Address already in use** | Something else is on port **8000** or **8080**. Stop that process or change the port in the uvicorn / mock_rpi command. |
+| **422 on intake** | Event `ts` must be roughly **“now”** (within a few minutes). The inject script uses current time; old JSON fixtures need their `ts` updated. |
+| **Search returns nothing** | Use a word that actually appears in the **transcript** or **summary** you stored; very short or stop-word-only queries may rank oddly. |
+| **No Gemma / “no model” in chat** | Normal if **`PHONE_GEMMA_MODEL`** is unset — chat still streams a short fallback message. For a real model, install **`pip install -e ".[gemma]"`**, set the env var to a valid **GGUF** path, restart uvicorn. |
+
+---
+
+## 8) SPEECH routing (implemented)
+
+**Behaviour:** For **SPEECH** events, [`phone/gemma/speech_routing.py`](c:\Users\inchara P\week-1-Youleft\dementia\phone\gemma\speech_routing.py) runs first. If the transcript matches symptom / med / risk patterns → [`phone/gemma/router.py`](c:\Users\inchara P\week-1-Youleft\dementia\phone\gemma\router.py) uses the **specialist** path (classifier + summarizer; entities include `triage_route: specialist`). Otherwise → **soft path**: [`phone/gemma/empathy.py`](c:\Users\inchara P\week-1-Youleft\dementia\phone\gemma\empathy.py) template caregiver summary and `triage_route: empathy_only` only (no classifier call).
+
+**Tests:** [`phone/tests/test_speech_routing.py`](c:\Users\inchara P\week-1-Youleft\dementia\phone\tests\test_speech_routing.py).
+
+**Next (Unsloth):** replace specialist classifier JSON with your LoRA-tuned model; optional second orchestrator LLM later.

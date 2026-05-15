@@ -3,26 +3,38 @@ package com.sementia.caregiver
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.sementia.caregiver.ui.HubViewModel
 import com.sementia.caregiver.ui.navigation.NavGraph
 import com.sementia.caregiver.ui.navigation.Screen
 import com.sementia.caregiver.ui.theme.SementiaTheme
 
 class MainActivity : ComponentActivity() {
+
+    private val hubViewModel: HubViewModel by viewModels {
+        ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SementiaTheme {
                 val navController = rememberNavController()
+                val startDestination = remember {
+                    if (hubViewModel.savedHubUrlExists()) Screen.Home.route else Screen.Auth.route
+                }
                 val items = listOf(
                     Screen.Home to Icons.Default.Home,
                     Screen.Timeline to Icons.Default.Timeline,
@@ -60,7 +72,11 @@ class MainActivity : ComponentActivity() {
                     }
                 ) { innerPadding ->
                     Surface(modifier = Modifier.padding(innerPadding)) {
-                        NavGraph(navController = navController)
+                        NavGraph(
+                            navController = navController,
+                            hubViewModel = hubViewModel,
+                            startDestination = startDestination,
+                        )
                     }
                 }
             }

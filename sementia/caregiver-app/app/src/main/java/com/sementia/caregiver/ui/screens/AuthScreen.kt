@@ -15,24 +15,20 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.collectAsState
+import com.sementia.caregiver.ui.HubViewModel
 import com.sementia.caregiver.ui.theme.*
 
-@Preview(showBackground = true)
 @Composable
-fun AuthScreenPreview() {
-    MaterialTheme {
-        Surface {
-            AuthScreen(onAuthenticated = {})
-        }
-    }
-}
-
-@Composable
-fun AuthScreen(onAuthenticated: () -> Unit) {
+fun AuthScreen(
+    hubViewModel: HubViewModel,
+    onAuthenticated: () -> Unit,
+) {
     var pin by remember { mutableStateOf("") }
-    var ipAddress by remember { mutableStateOf("192.168.1.50") } // Default/Discovery placeholder
-    var isConnecting by remember { mutableStateOf(false) }
+    /** Android emulator → host machine (uvicorn). Physical device: your PC’s LAN IP. */
+    var ipAddress by remember { mutableStateOf("10.0.2.2") }
+    val connectError by hubViewModel.connectError.collectAsState()
+    val isConnecting by hubViewModel.isConnecting.collectAsState()
 
     Column(
         modifier = Modifier
@@ -40,25 +36,28 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
             .background(Color.White)
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = "Welcome to Sementia",
             style = MaterialTheme.typography.headlineLarge,
-            color = BluePrimary
+            color = BluePrimary,
         )
         Text(
             text = "Connect to the patient's monitoring hub",
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 8.dp, bottom = 48.dp)
+            modifier = Modifier.padding(top = 8.dp, bottom = 48.dp),
         )
 
         OutlinedTextField(
             value = ipAddress,
             onValueChange = { ipAddress = it },
-            label = { Text("Hub IP Address") },
+            label = { Text("Hub address (IP or URL)") },
+            supportingText = {
+                Text("Emulator: 10.0.2.2 — Device: your PC’s IP, port optional (defaults to 8000)")
+            },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -70,22 +69,26 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            visualTransformation = PasswordVisualTransformation()
+            visualTransformation = PasswordVisualTransformation(),
         )
+
+        connectError?.let { err ->
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = {
-                isConnecting = true
-                // In a real app, verify PIN and connection here
-                onAuthenticated()
+                hubViewModel.connect(ipAddress, pin, onAuthenticated)
             },
+            enabled = !isConnecting,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(28.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
+            colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
         ) {
             if (isConnecting) {
                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
@@ -95,8 +98,8 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
         }
 
         TextButton(
-            onClick = { /* Start mDNS discovery */ },
-            modifier = Modifier.padding(top = 16.dp)
+            onClick = { /* mDNS later */ },
+            modifier = Modifier.padding(top = 16.dp),
         ) {
             Text("Auto-discover Hub", color = BlueSecondary)
         }

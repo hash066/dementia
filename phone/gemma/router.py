@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any
 
 from phone import config
-from phone.gemma import classifier, summarizer
+from phone.gemma import classifier, empathy, speech_routing, summarizer
 from phone.gemma.client import GemmaClient
 from phone.intake.validator import EventEnvelopeIn
 
@@ -95,6 +94,13 @@ async def route_event(env: EventEnvelopeIn, client: GemmaClient) -> RouteResult:
 
     if env.type == "SPEECH":
         transcript = res.transcript or ""
+        if not speech_routing.needs_specialist_triage(transcript):
+            res.summary = empathy.caregiver_soft_summary(transcript)
+            res.entities_json = json.dumps(
+                [{"label": "triage_route", "value": "empathy_only"}],
+            )
+            return res
+
         use_llm = bool(config.phone_gemma_model())
         if use_llm:
             cls = await classifier.classify_content(client, event_type="SPEECH", content=transcript)
@@ -103,7 +109,9 @@ async def route_event(env: EventEnvelopeIn, client: GemmaClient) -> RouteResult:
             cls = classifier.classify_stub(transcript)
             summ = summarizer.summarize_stub(transcript)
         res.summary = summ
-        res.entities_json = json.dumps(cls.get("entities") or [])
+        entities = list(cls.get("entities") or [])
+        entities.append({"label": "triage_route", "value": "specialist"})
+        res.entities_json = json.dumps(entities)
         cat = str(cls.get("medical_category") or "none")
         if cat != "none":
             med_label = next(

@@ -1,33 +1,92 @@
 package com.sementia.caregiver.data.remote
 
 import com.sementia.caregiver.domain.model.EventEnvelope
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.okhttp.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.prepareGet
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.execute
+import io.ktor.http.ContentType
+import io.ktor.http.isSuccess
+import io.ktor.http.contentType
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.cancel
+import io.ktor.utils.io.readUTF8Line
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 
-class SementiaClient(private val baseUrl: String) {
-    private val client = HttpClient(OkHttp) {
+val HubJson: Json = Json {
+    ignoreUnknownKeys = true
+    isLenient = true
+}
+
+fun createPhoneHttpClient(json: Json = HubJson): HttpClient =
+    HttpClient(OkHttp) {
         install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                prettyPrint = true
-            })
+            json(json)
+        }
+    }
+
+class SementiaClient(
+    baseUrl: String,
+    private val client: HttpClient,
+) {
+    private val root = baseUrl.trimEnd('/')
+
+    suspend fun healthCheck(): Result<Unit> = runCatching {
+        val response = client.get("$root/health")
+        if (!response.status.isSuccess()) {
+            error("Hub returned HTTP ${response.status.value}")
         }
     }
 
     suspend fun fetchEvents(since: Long? = null): List<EventEnvelope> {
-        return client.get("$baseUrl/query/events") {
-            parameter("since", since)
+        val rows: List<EventRowDto> = client.get("$root/query/events") {
+            since?.let { parameter("since", it) }
         }.body()
+        return rows.map { it.toEventEnvelope() }
     }
 
-    suspend fun acknowledgeEmergency(eventId: String, note: String) {
-        client.post("$baseUrl/query/ack-emergency") {
-            setBody(mapOf("event_id" to eventId, "note" to note))
+    suspend fun acknowledgeEmergency(eventId: String, note: String): Result<Unit> = runCatching {
+        val response = client.post("$root/query/ack-emergency") {
+            contentType(ContentType.Application.Json)
+            setBody(AckEmergencyBody(eventId = eventId, note = note))
+        }
+        if (!response.status.isSuccess()) {
+            error("Ack failed: HTTP ${response.status.value}")
+        }
+    }
+
+    /**
+     * Server-sent events from GET /query/chat?q=… (word chunks as `data: …`).
+     */
+    fun streamChat(query: String): Flow<String> = flow {
+        client.prepareGet("$root/query/chat") {
+            parameter("q", query)
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                emit("Sorry, the hub returned HTTP ${response.status.value}.\n")
+                return@execute
+            }
+            val channel = response.bodyAsChannel()
+            try {
+                while (!channel.isClosedForRead) {
+                    val line = channel.readUTF8Line() ?: break
+                    if (!line.startsWith("data: ")) continue
+                    val data = line.removePrefix("data: ").trim()
+                    if (data == "[DONE]") break
+                    emit("$data ")
+                }
+            } finally {
+                channel.cancel(null)
+            }
         }
     }
 }

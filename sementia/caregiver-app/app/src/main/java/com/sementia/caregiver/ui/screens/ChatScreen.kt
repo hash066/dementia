@@ -16,82 +16,96 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.sementia.caregiver.data.remote.ChatMessage
-import com.sementia.caregiver.data.remote.ChatService
+import com.sementia.caregiver.ui.HubViewModel
 import com.sementia.caregiver.ui.theme.*
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 @Composable
-fun ChatScreen() {
+fun ChatScreen(hubViewModel: HubViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val intentClassifier = remember { com.sementia.caregiver.data.ml.IntentClassifier(context) }
-    val chatService = remember { ChatService() }
     val scope = rememberCoroutineScope()
     var inputText by remember { mutableStateOf("") }
     val messages = remember { mutableStateListOf<ChatMessage>() }
     val listState = rememberLazyListState()
     var detectedIntent by remember { mutableStateOf(com.sementia.caregiver.data.ml.ChatIntent.UNKNOWN) }
+    val baseUrl by hubViewModel.baseUrl.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(WarmGrayBackground)
+            .background(WarmGrayBackground),
     ) {
-        // Intent Badge (LiteRT feedback)
         if (detectedIntent != com.sementia.caregiver.data.ml.ChatIntent.UNKNOWN) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = if (detectedIntent == com.sementia.caregiver.data.ml.ChatIntent.EMERGENCY) CriticalRed else BluePrimary.copy(alpha = 0.1f)
+                color = if (detectedIntent == com.sementia.caregiver.data.ml.ChatIntent.EMERGENCY) {
+                    CriticalRed
+                } else {
+                    BluePrimary.copy(alpha = 0.1f)
+                },
             ) {
                 Text(
                     text = "On-Device Detection: ${detectedIntent.name}",
                     modifier = Modifier.padding(8.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (detectedIntent == com.sementia.caregiver.data.ml.ChatIntent.EMERGENCY) Color.White else BluePrimary
+                    color = if (detectedIntent == com.sementia.caregiver.data.ml.ChatIntent.EMERGENCY) {
+                        Color.White
+                    } else {
+                        BluePrimary
+                    },
                 )
             }
         }
-        // Header
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
-            shadowElevation = 1.dp
+            shadowElevation = 1.dp,
         ) {
-            Text(
-                text = "Memory Assistant",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(16.dp)
-            )
+            Column(Modifier.padding(16.dp)) {
+                Text(
+                    text = "Memory Assistant",
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                if (baseUrl == null) {
+                    Text(
+                        text = "Sign in and connect to the hub to query patient memories.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
         }
 
-        // Message List
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 16.dp),
             contentPadding = PaddingValues(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(messages) { message ->
                 ChatBubble(message)
             }
         }
 
-        // Input Area
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
-            shadowElevation = 8.dp
+            shadowElevation = 8.dp,
         ) {
             Row(
                 modifier = Modifier
                     .padding(16.dp)
                     .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 OutlinedTextField(
                     value = inputText,
-                    onValueChange = { 
+                    onValueChange = {
                         inputText = it
                         detectedIntent = intentClassifier.classifyIntent(it)
                     },
@@ -100,39 +114,49 @@ fun ChatScreen() {
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = BluePrimary,
-                        unfocusedBorderColor = Color.LightGray
-                    )
+                        unfocusedBorderColor = Color.LightGray,
+                    ),
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 IconButton(
                     onClick = {
-                        if (inputText.isNotBlank()) {
-                            val userMsg = ChatMessage.User(inputText)
-                            messages.add(userMsg)
-                            val query = inputText
-                            inputText = ""
-                            
-                            // Scroll to bottom
-                            scope.launch {
-                                listState.animateScrollToItem(messages.size - 1)
-                            }
+                        if (inputText.isBlank()) return@IconButton
+                        val userMsg = ChatMessage.User(inputText)
+                        messages.add(userMsg)
+                        val query = inputText
+                        inputText = ""
 
-                            // Start streaming assistant response
-                            scope.launch {
-                                var assistantMsg = ChatMessage.Assistant("", isThinking = true)
-                                messages.add(assistantMsg)
-                                var fullText = ""
-                                chatService.streamChatResponse(query).collect { chunk ->
+                        scope.launch {
+                            listState.animateScrollToItem(messages.size - 1)
+                        }
+
+                        scope.launch {
+                            val assistantMsg = ChatMessage.Assistant("", isThinking = true)
+                            messages.add(assistantMsg)
+                            val api = hubViewModel.clientOrNull()
+                            if (api == null) {
+                                messages[messages.lastIndex] = ChatMessage.Assistant(
+                                    "Connect to the hub on the welcome screen to use memory chat.",
+                                    isThinking = false,
+                                )
+                                return@launch
+                            }
+                            var fullText = ""
+                            api.streamChat(query)
+                                .catch { e ->
+                                    emit("\nError: ${e.message ?: "chat failed"}")
+                                }
+                                .collect { chunk ->
                                     fullText += chunk
-                                    messages[messages.size - 1] = ChatMessage.Assistant(fullText, isThinking = false)
+                                    messages[messages.lastIndex] =
+                                        ChatMessage.Assistant(fullText, isThinking = false)
                                     listState.animateScrollToItem(messages.size - 1)
                                 }
-                            }
                         }
                     },
-                    colors = IconButtonDefaults.iconButtonColors(containerColor = BluePrimary)
+                    colors = IconButtonDefaults.iconButtonColors(containerColor = BluePrimary),
                 ) {
                     Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White)
                 }
@@ -159,7 +183,7 @@ fun ChatBubble(message: ChatMessage) {
                 .widthIn(max = 280.dp)
                 .clip(shape)
                 .background(bubbleColor)
-                .padding(12.dp)
+                .padding(12.dp),
         ) {
             val text = when (message) {
                 is ChatMessage.User -> message.text
@@ -168,16 +192,8 @@ fun ChatBubble(message: ChatMessage) {
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
-                color = textColor
+                color = textColor,
             )
         }
-    }
-}
-
-@androidx.compose.runtime.Composable
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
-fun ChatPreview() {
-    com.sementia.caregiver.ui.theme.SementiaTheme {
-        ChatScreen()
     }
 }
