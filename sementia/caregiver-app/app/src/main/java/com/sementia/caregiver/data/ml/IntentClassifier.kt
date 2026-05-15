@@ -17,7 +17,7 @@ class IntentClassifier(context: Context) {
         try {
             interpreter = Interpreter(loadModelFile(context, "intent_classifier.tflite"))
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.printStackTrace() // Expected to fail until you drop the .tflite file in assets
         }
     }
 
@@ -30,21 +30,17 @@ class IntentClassifier(context: Context) {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 
-    /**
-     * Classifies user input locally using LiteRT.
-     * In a real implementation, this would involve tokenizing the string 
-     * and running it through the model.
-     */
     fun classifyIntent(text: String): ChatIntent {
-        if (interpreter == null) return ChatIntent.UNKNOWN
-
-        // Heuristic fallback for demonstration if the model is just a stub
-        return when {
-            text.contains("help", ignoreCase = true) || text.contains("emergency", ignoreCase = true) -> 
-                ChatIntent.EMERGENCY
-            text.contains("med", ignoreCase = true) || text.contains("pill", ignoreCase = true) -> 
-                ChatIntent.MEDICAL_QUERY
-            else -> ChatIntent.CASUAL
+        if (interpreter == null) {
+            // Fallback heuristics if the LiteRT model isn't in the assets folder yet
+            return when {
+                text.contains("help", ignoreCase = true) || text.contains("emergency", ignoreCase = true) -> ChatIntent.EMERGENCY
+                text.contains("med", ignoreCase = true) || text.contains("pill", ignoreCase = true) -> ChatIntent.MEDICAL_QUERY
+                else -> ChatIntent.CASUAL
+            }
         }
+        
+        // TODO: Actual tokenization and Interpreter inference goes here when the model is ready
+        return ChatIntent.CASUAL
     }
 }

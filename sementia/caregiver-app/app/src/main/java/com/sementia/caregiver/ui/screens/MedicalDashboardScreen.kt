@@ -11,6 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.sementia.caregiver.ui.theme.*
+import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
+import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
+import com.patrykandpatrick.vico.compose.chart.Chart
+import com.patrykandpatrick.vico.compose.chart.line.lineChart
+import com.patrykandpatrick.vico.core.entry.entryModelOf
 
 @Composable
 fun MedicalDashboardScreen() {
@@ -65,8 +70,26 @@ fun MedicationList() {
 
 @Composable
 fun HealthTrends() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Health Charts (Vico Integration) Coming Soon", color = TextSecondary)
+    val chartEntryModel = entryModelOf(72f, 75f, 71f, 78f, 74f, 72f, 73f)
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text(
+            text = "Heart Rate (Last 7 Days)", 
+            style = MaterialTheme.typography.titleMedium, 
+            color = TextPrimary,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth().height(250.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Chart(
+                chart = lineChart(),
+                model = chartEntryModel,
+                startAxis = rememberStartAxis(),
+                bottomAxis = rememberBottomAxis(),
+                modifier = Modifier.padding(16.dp).fillMaxSize()
+            )
+        }
     }
 }
 
