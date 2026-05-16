@@ -1,4 +1,7 @@
-data/
+# SQLite / local phone DB at repo root only (not Android package paths named `data`)
+/data/
+training/data/raw/
+training/outputs/
 *.db
 __pycache__/
 .pytest_cache/

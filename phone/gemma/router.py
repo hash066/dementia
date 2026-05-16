@@ -3,9 +3,8 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
-from phone import config
-from phone.gemma import classifier, empathy, speech_routing, summarizer
-from phone.gemma.client import GemmaClient
+from phone.gemma import classifier, orchestrator, specialist
+from phone.gemma.client import GemmaClient, get_orchestrator_client, get_specialist_client
 from phone.intake.validator import EventEnvelopeIn
 
 
@@ -94,41 +93,38 @@ async def route_event(env: EventEnvelopeIn, client: GemmaClient) -> RouteResult:
 
     if env.type == "SPEECH":
         transcript = res.transcript or ""
-        if not speech_routing.needs_specialist_triage(transcript):
-            res.summary = empathy.caregiver_soft_summary(transcript)
+        orch = get_orchestrator_client()
+        route = await orchestrator.decide_route(transcript, orch)
+
+        if route == "empathy":
+            res.summary = await orchestrator.empathy_summary(transcript, orch)
             res.entities_json = json.dumps(
-                [{"label": "triage_route", "value": "empathy_only"}],
+                [{"label": "triage_route", "value": "empathy"}],
             )
             return res
 
-        use_llm = bool(config.phone_gemma_model())
-        if use_llm:
-            cls = await classifier.classify_content(client, event_type="SPEECH", content=transcript)
-            summ = await summarizer.summarize_transcript(client, transcript)
-        else:
-            cls = classifier.classify_stub(transcript)
-            summ = summarizer.summarize_stub(transcript)
-        res.summary = summ
-        entities = list(cls.get("entities") or [])
-        entities.append({"label": "triage_route", "value": "specialist"})
+        spec = get_specialist_client()
+        triage = await specialist.triage_transcript(spec, transcript)
+        res.summary = str(triage.get("caregiver_summary") or "")
+        entities = specialist.triage_to_entities(triage)
         res.entities_json = json.dumps(entities)
-        cat = str(cls.get("medical_category") or "none")
+
+        cat = str(triage.get("medical_category") or "none")
         if cat != "none":
-            med_label = next(
-                (str(e.get("value", "")) for e in cls.get("entities", []) if e.get("label") == "medication"),
-                "speech",
-            )
-            res.medical_rows.append((eid, cat, med_label, transcript[:500], ts))
-        distress = str(cls.get("distress_level") or "none")
+            res.medical_rows.append((eid, cat, "speech", transcript[:500], ts))
+        distress = str(triage.get("distress_level") or "none")
         if distress in ("moderate", "severe"):
             res.priority = "HIGH"
-        if cls.get("action_required"):
+        urgency = str(triage.get("urgency") or "none")
+        if urgency in ("high", "critical"):
+            res.priority = "HIGH"
+        if triage.get("action_required"):
             res.commands.append(
                 ControlCommandOut(
                     command_id=_new_cmd_id(),
                     ts=ts,
                     type="ALERT_NOTIFY",
-                    text="Distress signal from speech classification.",
+                    text="Distress signal from specialist triage.",
                 )
             )
         return res

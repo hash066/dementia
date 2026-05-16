@@ -1,0 +1,35 @@
+# Raw training data sources (auto-downloaded). Do not edit files under ../raw/.
+specialist:
+  - id: hf_medical_symptom_triage
+    hub: sweatSmile/medical-symptom-triage-conversational
+    path: ../raw/specialist/hf_medical_symptom_triage
+  - id: hf_medical_triage_500
+    hub: syntech-ai/medical-triage-500
+    path: ../raw/specialist/hf_medical_triage_500
+  - id: hf_triage_transcriptions
+    hub: yuriyvnv/triage_transcriptions
+    path: ../raw/specialist/hf_triage_transcriptions
+orchestrator:
+  - id: hf_empathetic_dialogues
+    hub: facebook/empathetic_dialogues
+    path: ../raw/orchestrator/hf_empathetic_dialogues
+  - id: hf_caregiver_research
+    hub: Ubresearch/CaregiverResearch
+    path: ../raw/orchestrator/hf_caregiver_research
+  - id: hf_book2chatbot_caregiving
+    hub: lhkhiem28/Book2Chatbot-datasets-Caregiving
+    path: ../raw/orchestrator/hf_book2chatbot_caregiving
+eval:
+  - id: hf_adrd_bench
+    hub: IIRL-NotreDame/ADRD-Bench
+    path: ../raw/eval/hf_adrd_bench
+  - id: hf_caregiver_evals
+    hub: givecare/caregiver-evals
+    path: ../raw/eval/hf_caregiver_evals
+optional:
+  - id: github_carecall_corpus
+    url: https://github.com/naver-ai/carecall-corpus
+    path: ../raw/optional/github_carecall_corpus
+  - id: github_carecall_memory
+    url: https://github.com/naver-ai/carecall-memory
+    path: ../raw/optional/github_carecall_memory

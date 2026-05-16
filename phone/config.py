@@ -32,6 +32,14 @@ def phone_gemma_model() -> str:
     return os.environ.get("PHONE_GEMMA_MODEL", "")
 
 
+def phone_gemma_orchestrator_model() -> str:
+    return os.environ.get("PHONE_GEMMA_ORCHESTRATOR_MODEL", phone_gemma_model())
+
+
+def phone_gemma_specialist_model() -> str:
+    return os.environ.get("PHONE_GEMMA_SPECIALIST_MODEL", phone_gemma_model())
+
+
 def phone_clock_skew_ms() -> int:
     return int(os.environ.get("PHONE_CLOCK_SKEW_MS", "300000"))
 

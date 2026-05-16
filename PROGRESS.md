@@ -51,9 +51,11 @@ This project is an **elder-care monitoring system** split across three roles: se
 | **phone/intake/__init__.py** | Package marker for the intake folder. | — |
 | **phone/gemma/client.py** | Loads the Gemma AI model if a model file path is set; otherwise returns empty so stubs run. | Used by classifier, summarizer, and chat when you want real AI. |
 | **phone/gemma/router.py** | Decides what to do per event type: e.g. speech → summarise + maybe medical row; emergency → mark alert + “speak” command. | Called from `intake/server.py` after validation; results drive `upsert.py` and `command_emitter.py`. |
-| **phone/gemma/speech_routing.py** | **Keyword / pattern gate** for SPEECH: if transcript looks like symptoms, meds, or distress → use full **specialist** path (classifier + summarizer, future Unsloth JSON). Otherwise **soft empathy path** (no heavy triage). | Imported by `router.py` for SPEECH only. |
-| **phone/gemma/empathy.py** | **Template caregiver one-liners** for the soft path (greeting, loneliness, thanks, generic chat) — no diagnosis, no dosing. | Used by `router.py` when `speech_routing.needs_specialist_triage` is false. |
-| **phone/gemma/classifier.py** | Asks the AI (or a simple keyword fallback) to extract entities and risk hints from text. | Used for SPEECH and OBJECT paths inside `router.py`. |
+| **phone/gemma/orchestrator.py** | **Empathetic orchestrator** — routes SPEECH to warm conversation vs specialist triage (Gemma when loaded; keyword fallback via `speech_routing.py`). | First step for every SPEECH event in `router.py`. |
+| **phone/gemma/specialist.py** | **Unsloth specialist** — triage JSON: urgency, follow-up questions, caregiver summary, safety note (LoRA GGUF when `PHONE_GEMMA_SPECIALIST_MODEL` set). | Used when orchestrator chooses `specialist`. |
+| **phone/gemma/speech_routing.py** | Keyword fallback when orchestrator model is not loaded. | Used by `orchestrator.decide_route`. |
+| **phone/gemma/empathy.py** | Template caregiver one-liners when orchestrator model is not loaded. | Used by `orchestrator.empathy_summary`. |
+| **phone/gemma/classifier.py** | Entity extraction for **OBJECT** events (legacy schema). | Used for OBJECT path in `router.py`. |
 | **phone/gemma/summarizer.py** | Asks the AI (or a short text fallback) to write a one-line caregiver summary. | Used for SPEECH inside `router.py`. |
 | **phone/gemma/__init__.py** | Package marker for Gemma-related code. | — |
 | **phone/memory/db.py** | Opens the SQLite file, applies `schema.sql`, manages one-writer locks and commits. | Used by `server.py`, `query/api.py`, and tests via `get_db()`. |
@@ -92,7 +94,7 @@ This project is an **elder-care monitoring system** split across three roles: se
 1. **Sensors on the home device (Raspberry Pi — Person 1, not fully in this repo yet)** notice something: speech transcribed, motion, button press, etc.
 2. The Pi builds an **event envelope** (ID, time, type, details) and **POSTs it over the home network** to the phone core at something like `http://<phone-or-home-server>:8000/intake/event` — today as **JSON**; the team contract also allows **Protobuf** on the wire for smaller/faster payloads once intake decodes it.
 3. **Phone core** (`server.py`) receives the body, **validates** it (`validator.py`), checks it is not a **duplicate** (`deduper.py`).
-4. **Router** (`router.py` + Gemma helpers) decides enrichment. For **SPEECH**, the agreed design is **specialist-first with a rule gate**: if the transcript matches symptom/med/distress patterns → run full classifier + summarizer (where Unsloth will plug in later); else → store a **short template caregiver summary** (empathy path) without running triage JSON. Fall/emergency still mark “active emergency” and queue **speak** for the Pi.
+4. **Router** (`router.py` + Gemma helpers) decides enrichment. For **SPEECH**, a **two-model design**: (1) **orchestrator** — empathetic routing for greetings, loneliness, routine chat; (2) **specialist** (Unsloth LoRA) — structured triage JSON with urgency, safe follow-up questions, caregiver summary, and safety note when symptoms or meds need clinical follow-up. Fall/emergency still mark “active emergency” and queue **speak** for the Pi.
 5. **Database** (`db.py` + `upsert.py`) saves the event and updates the **search index** (`fts.py`) so text is findable later.
 6. **Command emitter** (`command_emitter.py`) may **POST back** to the Pi (e.g. “play this phrase on the speaker”). During dev, **mock_rpi.py** receives that instead of a real Pi.
 7. **Caregiver phone app (Person 3 — not built in this repo yet)** will periodically call **query** endpoints on the same phone core: status (“is there an emergency?”), lists, **search**, medical timeline, and optional **chat** over saved memories (`query/api.py`).
@@ -108,11 +110,12 @@ This project is an **elder-care monitoring system** split across three roles: se
 - **Optional real Gemma** if you install the extra package and set `PHONE_GEMMA_MODEL` to a GGUF file.
 - **Duplicate event protection** and **emergency / ack** flows at the HTTP + DB level.
 - **Mock Pi listener** and **inject script** for local demos.
-- **SPEECH routing:** rule gate (`speech_routing.py`) + template soft path (`empathy.py`) vs specialist classifier path in `router.py` (see §8).
+- **SPEECH routing:** orchestrator + specialist paths wired in code (see §8); stubs when no GGUF is set.
 
 ## 5) What’s not built yet
 
-- **Unsloth specialist LoRA** and optional second orchestrator model (hackathon track).
+- **Unsloth LoRA training + GGUF export** for the specialist model (hackathon / Unsloth prize).
+- **Separate orchestrator GGUF** (optional; can share base Gemma until a dedicated empathy-tuned weights file exists).
 - **Person 1:** ESP32 firmware, Pi audio/vision pipelines, real `EventEnvelope` emitter hitting this service from hardware.
 - **Person 3:** Kotlin/Android caregiver app (screens, pairing, notifications) calling the query API.
 - **Production hardening:** auth between app and phone core, TLS on LAN, optional **SQLCipher** install path for encrypted DB in deployment.
@@ -207,10 +210,32 @@ pytest phone/tests -q
 
 ---
 
-## 8) SPEECH routing (implemented)
+## 8) SPEECH routing — two-tier models (implemented)
 
-**Behaviour:** For **SPEECH** events, [`phone/gemma/speech_routing.py`](c:\Users\inchara P\week-1-Youleft\dementia\phone\gemma\speech_routing.py) runs first. If the transcript matches symptom / med / risk patterns → [`phone/gemma/router.py`](c:\Users\inchara P\week-1-Youleft\dementia\phone\gemma\router.py) uses the **specialist** path (classifier + summarizer; entities include `triage_route: specialist`). Otherwise → **soft path**: [`phone/gemma/empathy.py`](c:\Users\inchara P\week-1-Youleft\dementia\phone\gemma\empathy.py) template caregiver summary and `triage_route: empathy_only` only (no classifier call).
+```mermaid
+flowchart TD
+  speech[SPEECH transcript] --> orch[Orchestrator Gemma]
+  orch -->|empathy| warm[Warm caregiver summary]
+  orch -->|specialist| spec[Unsloth specialist LoRA]
+  spec --> json[urgency + follow_up_questions + summary + safety_note]
+```
 
-**Tests:** [`phone/tests/test_speech_routing.py`](c:\Users\inchara P\week-1-Youleft\dementia\phone\tests\test_speech_routing.py).
+| Tier | Module | Role |
+|------|--------|------|
+| **Orchestrator** | `orchestrator.py` | Empathetic “front door”: route to conversation vs triage. Env: `PHONE_GEMMA_ORCHESTRATOR_MODEL`. |
+| **Specialist** | `specialist.py` | Unsloth target: fixed JSON for question-style / symptom situations. Env: `PHONE_GEMMA_SPECIALIST_MODEL`. |
 
-**Next (Unsloth):** replace specialist classifier JSON with your LoRA-tuned model; optional second orchestrator LLM later.
+**Specialist JSON (train & infer):**
+
+```json
+{
+  "urgency": "none|low|medium|high|critical",
+  "follow_up_questions": ["...", "..."],
+  "caregiver_summary": "one factual line",
+  "safety_note": "no diagnosis, no dosing; escalate when severe"
+}
+```
+
+**Tests:** [`phone/tests/test_speech_routing.py`](phone/tests/test_speech_routing.py).
+
+**Next (Unsloth):** fine-tune Gemma with LoRA on `(transcript → specialist JSON)` pairs; export GGUF; set `PHONE_GEMMA_SPECIALIST_MODEL`. Optionally fine-tune a separate orchestrator for routing + warmer empathy lines.

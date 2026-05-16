@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from starlette.testclient import TestClient
 
-from phone.gemma import empathy, speech_routing
+from phone.gemma import empathy, orchestrator, specialist, speech_routing
+from phone.gemma.client import GemmaClient
 from phone.tests.conftest import envelope_speech
 
 
@@ -30,7 +31,22 @@ def test_intake_speech_soft_path(client: TestClient) -> None:
     ev = client.get("/query/events", params={"limit": 1}).json()
     assert ev
     raw = ev[0].get("entities") or ""
-    assert "empathy_only" in raw
+    assert "empathy" in raw
+
+
+def test_orchestrator_route_stub() -> None:
+    import asyncio
+
+    stub = GemmaClient(model_path="")
+    assert asyncio.run(orchestrator.decide_route("good morning", stub)) == "empathy"
+    assert asyncio.run(orchestrator.decide_route("my chest hurts", stub)) == "specialist"
+
+
+def test_specialist_triage_stub_has_questions() -> None:
+    out = specialist.triage_stub("my chest hurts and I feel dizzy")
+    assert out["urgency"] in ("medium", "high", "critical")
+    assert out["follow_up_questions"]
+    assert out["safety_note"]
 
 
 def test_intake_speech_specialist_path(client: TestClient) -> None:

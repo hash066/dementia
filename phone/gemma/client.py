@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 class GemmaClient:
-    """Loads llama-cpp-python when PHONE_GEMMA_MODEL is set; otherwise deterministic stub."""
+    """Loads llama-cpp-python when a model path is set; otherwise deterministic stub."""
 
-    def __init__(self) -> None:
-        self._model_path = config.phone_gemma_model().strip()
+    def __init__(self, model_path: str | None = None) -> None:
+        self._model_path = (model_path if model_path is not None else config.phone_gemma_model()).strip()
         self._llm: Any = None
         self._lock = asyncio.Lock()
 
@@ -63,16 +63,34 @@ class GemmaClient:
         return await loop.run_in_executor(None, _run)
 
 
-_client: GemmaClient | None = None
+_default_client: GemmaClient | None = None
+_orchestrator_client: GemmaClient | None = None
+_specialist_client: GemmaClient | None = None
 
 
 def get_gemma_client() -> GemmaClient:
-    global _client
-    if _client is None:
-        _client = GemmaClient()
-    return _client
+    global _default_client
+    if _default_client is None:
+        _default_client = GemmaClient()
+    return _default_client
+
+
+def get_orchestrator_client() -> GemmaClient:
+    global _orchestrator_client
+    if _orchestrator_client is None:
+        _orchestrator_client = GemmaClient(config.phone_gemma_orchestrator_model())
+    return _orchestrator_client
+
+
+def get_specialist_client() -> GemmaClient:
+    global _specialist_client
+    if _specialist_client is None:
+        _specialist_client = GemmaClient(config.phone_gemma_specialist_model())
+    return _specialist_client
 
 
 def reset_gemma_client() -> None:
-    global _client
-    _client = None
+    global _default_client, _orchestrator_client, _specialist_client
+    _default_client = None
+    _orchestrator_client = None
+    _specialist_client = None

@@ -19,6 +19,8 @@ Environment:
 | `PHONE_USE_SQLCIPHER` | `1` to use `apsw` + encryption |
 | `PHONE_RPI_BASE` | RPi command URL (default `http://127.0.0.1:8080`) |
 | `PHONE_GEMMA_MODEL` | Path to Gemma 2B GGUF; empty = stub LLM for CI |
+| `PHONE_GEMMA_ORCHESTRATOR_MODEL` | Empathetic router GGUF (defaults to `PHONE_GEMMA_MODEL`) |
+| `PHONE_GEMMA_SPECIALIST_MODEL` | Unsloth triage LoRA GGUF (defaults to `PHONE_GEMMA_MODEL`) |
 | `PHONE_CLOCK_SKEW_MS` | Max ± skew for event `ts` vs server (default 300000) |
 
 ## Mock RPi (receives ControlCommand)
