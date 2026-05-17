@@ -16,7 +16,9 @@ data class EventEnvelope(
     val type: EventType,
     val priority: Severity,
     val description: String,
-    val payload: String? = null
+    val payload: String? = null,
+    val keyframeBase64: String? = null,
+    val location: String? = null,
 ) {
     val formattedTime: String
         get() = Instant.ofEpochMilli(timestamp).toString() // Basic formatting for now

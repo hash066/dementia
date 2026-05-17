@@ -19,6 +19,7 @@ if str(PRODUCTION_DIR) not in sys.path:
     sys.path.insert(0, str(PRODUCTION_DIR))
 
 from Shared.event_envelope_emitter import EventEnvelopeEmitter
+from Camera.camera_capture import emit_snapshot
 
 PORT = "/dev/serial0"
 BAUD = 115200
@@ -46,12 +47,18 @@ class SensorEventInterpreter:
         fall_gyro_dps: float,
         fall_cooldown_seconds: float,
         button_cooldown_seconds: float,
+        location: str,
+        camera_device: str,
+        capture_on_trigger: bool,
     ) -> None:
         self._emitter = emitter
         self._fall_accel_g = fall_accel_g
         self._fall_gyro_dps = fall_gyro_dps
         self._fall_cooldown_seconds = fall_cooldown_seconds
         self._button_cooldown_seconds = button_cooldown_seconds
+        self._location = location
+        self._camera_device = camera_device
+        self._capture_on_trigger = capture_on_trigger
         self._last_fall_emit_monotonic = 0.0
         self._last_button_emit_monotonic = 0.0
 
@@ -74,8 +81,10 @@ class SensorEventInterpreter:
                 "EMERGENCY",
                 {"trigger_source": "wearable_button", "fsm_state": "EMERGENCY_REQUESTED"},
                 priority="CRITICAL",
+                location=self._location,
             )
             print("emitted EMERGENCY button event" if ok else "failed to emit EMERGENCY button event")
+            self._capture_snapshot("button")
 
         if self._is_possible_fall(accel_g, gyro_dps):
             payload = {
@@ -84,11 +93,12 @@ class SensorEventInterpreter:
                 "button_pressed": bool(msg.button_pressed),
             }
             self._last_fall_emit_monotonic = time.monotonic()
-            ok = self._emitter.emit("FALL", payload, priority="HIGH")
+            ok = self._emitter.emit("FALL", payload, priority="HIGH", location=self._location)
             if ok:
                 print("emitted FALL event", payload)
             else:
                 print("failed to emit FALL event", payload)
+            self._capture_snapshot("fall")
 
     def _is_possible_fall(self, accel_g: float, gyro_dps: float) -> bool:
         if time.monotonic() - self._last_fall_emit_monotonic < self._fall_cooldown_seconds:
@@ -97,6 +107,23 @@ class SensorEventInterpreter:
 
     def _can_emit_button(self) -> bool:
         return time.monotonic() - self._last_button_emit_monotonic >= self._button_cooldown_seconds
+
+    def _capture_snapshot(self, trigger: str) -> None:
+        if not self._capture_on_trigger or not self._emitter:
+            return
+        try:
+            ok = emit_snapshot(
+                self._emitter,
+                device=self._camera_device,
+                width=640,
+                height=480,
+                quality=4,
+                location=self._location,
+                trigger=trigger,
+            )
+            print(f"emitted OBJECT {trigger} snapshot" if ok else f"failed to emit OBJECT {trigger} snapshot")
+        except Exception as exc:
+            print(f"camera snapshot after {trigger} failed: {exc}")
 
 
 def vector_magnitude(x: float, y: float, z: float) -> float:
@@ -182,6 +209,9 @@ def main():
     parser.add_argument("--fall-gyro-dps", type=float, default=DEFAULT_FALL_GYRO_DPS)
     parser.add_argument("--fall-cooldown-sec", type=float, default=DEFAULT_FALL_COOLDOWN_SECONDS)
     parser.add_argument("--button-cooldown-sec", type=float, default=DEFAULT_BUTTON_COOLDOWN_SECONDS)
+    parser.add_argument("--location", default="living room", help="Room label attached to emitted events")
+    parser.add_argument("--camera-device", default="/dev/video0", help="USB camera used for trigger snapshots")
+    parser.add_argument("--capture-on-trigger", action="store_true", help="Capture OBJECT keyframes on button/fall")
     args = parser.parse_args()
 
     stop_event = threading.Event()
@@ -192,6 +222,9 @@ def main():
         fall_gyro_dps=args.fall_gyro_dps,
         fall_cooldown_seconds=args.fall_cooldown_sec,
         button_cooldown_seconds=args.button_cooldown_sec,
+        location=args.location,
+        camera_device=args.camera_device,
+        capture_on_trigger=args.capture_on_trigger,
     )
 
     ffmpeg = start_ffmpeg(args.sdp, args.ffmpeg)

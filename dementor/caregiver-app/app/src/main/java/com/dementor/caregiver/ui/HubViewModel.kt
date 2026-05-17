@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dementor.caregiver.data.remote.DementorClient
+import com.dementor.caregiver.data.remote.HubStatusDto
+import com.dementor.caregiver.data.remote.MedicalRowDto
 import com.dementor.caregiver.data.remote.createPhoneHttpClient
 import com.dementor.caregiver.data.remote.normalizeHubBaseUrl
 import com.dementor.caregiver.domain.model.EventEnvelope
@@ -71,6 +73,15 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
 
     suspend fun fetchEvents(): List<EventEnvelope> =
         clientOrNull()?.fetchEvents() ?: emptyList()
+
+    suspend fun fetchStatus(): HubStatusDto? =
+        clientOrNull()?.fetchStatus()
+
+    suspend fun fetchMedical(category: String? = null): List<MedicalRowDto> =
+        clientOrNull()?.fetchMedical(category) ?: emptyList()
+
+    suspend fun searchMemories(query: String): List<EventEnvelope> =
+        clientOrNull()?.searchMemories(query) ?: emptyList()
 
     suspend fun acknowledgeEmergency(eventId: String, note: String) {
         clientOrNull()?.acknowledgeEmergency(eventId, note)?.getOrThrow()

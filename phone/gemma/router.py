@@ -83,7 +83,9 @@ async def route_event(env: EventEnvelopeIn, client: GemmaClient) -> RouteResult:
         content = json.dumps(env.payload)
         cls = await classifier.classify_content(client, event_type=env.type, content=content)
         res.entities_json = json.dumps(cls.get("entities") or [])
-        res.summary = None
+        label = str(env.payload.get("label") or "Scene captured")
+        location = str(env.payload.get("location") or "room unknown")
+        res.summary = f"{label} in {location}."
         if cls.get("medical_category") not in (None, "none"):
             lbl = str(env.payload.get("label") or "detection")
             res.medical_rows.append(

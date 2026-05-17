@@ -38,6 +38,7 @@ fun NavGraph(
         }
         composable(Screen.Home.route) {
             HomeScreen(
+                hubViewModel = hubViewModel,
                 onNavigateToChat = { navController.navigate(Screen.Chat.route) },
                 onNavigateToTimeline = { navController.navigate(Screen.Timeline.route) },
                 onNavigateToMedical = { navController.navigate(Screen.Medical.route) },
@@ -50,7 +51,7 @@ fun NavGraph(
             ChatScreen(hubViewModel = hubViewModel)
         }
         composable(Screen.Medical.route) {
-            MedicalDashboardScreen()
+            MedicalDashboardScreen(hubViewModel = hubViewModel)
         }
         composable(Screen.Settings.route) {
             SettingsScreen(

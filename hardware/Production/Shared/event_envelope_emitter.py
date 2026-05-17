@@ -26,7 +26,15 @@ class EventEnvelopeEmitter:
     def close(self) -> None:
         self._client.close()
 
-    def emit(self, event_type: str, payload: dict[str, Any], priority: str = "NORMAL") -> bool:
+    def emit(
+        self,
+        event_type: str,
+        payload: dict[str, Any],
+        priority: str = "NORMAL",
+        location: str | None = None,
+    ) -> bool:
+        if location and "location" not in payload:
+            payload = {**payload, "location": location}
         envelope = {
             "event_id": str(uuid.uuid4()),
             "ts": int(time.time() * 1000),

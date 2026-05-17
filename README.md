@@ -26,7 +26,7 @@ Environment:
 | `PHONE_DB_PATH` | SQLite file path, default `./data/phone.db` |
 | `PHONE_DB_KEY` | SQLCipher key when encryption is enabled |
 | `PHONE_USE_SQLCIPHER` | `1`/`true` to use optional SQLCipher dependency |
-| `PHONE_RPI_BASE` | Raspberry Pi command URL, default `http://127.0.0.1:8080` |
+| `PHONE_RPI_BASE` | Raspberry Pi command URL, for example `http://<pi-ip>:8010` |
 | `PHONE_GEMMA_MODEL` | Local Gemma GGUF path; empty uses deterministic fallback |
 | `PHONE_GEMMA_ORCHESTRATOR_MODEL` | Empathetic router GGUF; defaults to `PHONE_GEMMA_MODEL` |
 | `PHONE_GEMMA_SPECIALIST_MODEL` | Unsloth triage LoRA GGUF; defaults to `PHONE_GEMMA_MODEL` |
@@ -35,6 +35,27 @@ Environment:
 ## End-To-End Demo
 
 Follow `docs/DEMO.md` for the full laptop + Raspberry Pi + ESP32 + Android app flow.
+
+Core demo loops now covered:
+
+- Speech memory: Pi ASR emits `SPEECH` events with a room label.
+- Camera memory: Pi camera emits `OBJECT` events with base64 JPEG keyframes.
+- Emergency loop: ESP32 button/fall emits emergency events, caregiver acknowledges in app, phone clears state, Pi command server speaks the acknowledgement.
+- Gemma memory reasoning: Android chat streams `/query/chat`, where the phone core prompts Gemma over retrieved SQLite/FTS memories. If no model is configured, the endpoint says so explicitly and still shows retrieved evidence.
+
+Pi camera snapshot:
+
+```bash
+cd hardware/Production/Camera
+python3 camera_capture.py --emit http://<phone-ip>:8000 --device /dev/video0 --location "living room" --interval-sec 300
+```
+
+Pi command receiver for emergency acknowledgements:
+
+```bash
+cd hardware/Production/PiCommand
+python3 rpi_command_server.py --port 8010
+```
 
 ## Mock RPi
 

@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.dementor.caregiver.data.remote.ChatMessage
+import com.dementor.caregiver.domain.model.EventEnvelope
 import com.dementor.caregiver.ui.HubViewModel
 import com.dementor.caregiver.ui.theme.*
 import kotlinx.coroutines.flow.catch
@@ -28,6 +29,7 @@ fun ChatScreen(hubViewModel: HubViewModel) {
     val scope = rememberCoroutineScope()
     var inputText by remember { mutableStateOf("") }
     val messages = remember { mutableStateListOf<ChatMessage>() }
+    var searchResults by remember { mutableStateOf<List<EventEnvelope>>(emptyList()) }
     val listState = rememberLazyListState()
     var detectedIntent by remember { mutableStateOf(com.dementor.caregiver.data.ml.ChatIntent.UNKNOWN) }
     val baseUrl by hubViewModel.baseUrl.collectAsState()
@@ -90,6 +92,27 @@ fun ChatScreen(hubViewModel: HubViewModel) {
             items(messages) { message ->
                 ChatBubble(message)
             }
+            if (searchResults.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Retrieved memories",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+                items(searchResults, key = { it.id }) { event ->
+                    Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text(event.type.name, style = MaterialTheme.typography.labelSmall, color = BluePrimary)
+                            Text(event.description, style = MaterialTheme.typography.bodyMedium)
+                            event.location?.let {
+                                Text(it, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Surface(
@@ -143,6 +166,7 @@ fun ChatScreen(hubViewModel: HubViewModel) {
                                 )
                                 return@launch
                             }
+                            searchResults = api.searchMemories(query).take(5)
                             var fullText = ""
                             api.streamChat(query)
                                 .catch { e ->

@@ -4,11 +4,14 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.graphics.BitmapFactory
+import android.util.Base64
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
@@ -17,7 +20,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -166,6 +171,15 @@ fun EventCard(
                     text = "Detailed log: ${event.payload ?: "No additional data."}",
                     style = MaterialTheme.typography.bodyMedium,
                 )
+                event.location?.takeIf { it.isNotBlank() }?.let { location ->
+                    Text(
+                        text = "Location: $location",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
+                EventKeyframe(event.keyframeBase64)
                 if (event.type == com.dementor.caregiver.domain.model.EventType.EMERGENCY ||
                     event.priority == Severity.CRITICAL
                 ) {
@@ -183,4 +197,26 @@ fun EventCard(
             }
         }
     }
+}
+
+@Composable
+private fun EventKeyframe(keyframeBase64: String?) {
+    if (keyframeBase64.isNullOrBlank()) return
+    val bitmap = remember(keyframeBase64) {
+        runCatching {
+            val bytes = Base64.decode(keyframeBase64, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        }.getOrNull()
+    } ?: return
+
+    Image(
+        bitmap = bitmap.asImageBitmap(),
+        contentDescription = "Camera snapshot",
+        modifier = Modifier
+            .padding(top = 12.dp)
+            .fillMaxWidth()
+            .height(180.dp)
+            .clip(RoundedCornerShape(8.dp)),
+        contentScale = ContentScale.Crop,
+    )
 }

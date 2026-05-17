@@ -53,6 +53,26 @@ class DementorClient(
         return rows.map { it.toEventEnvelope() }
     }
 
+    suspend fun fetchStatus(): HubStatusDto =
+        client.get("$root/query/status").body()
+
+    suspend fun fetchMedical(category: String? = null): List<MedicalRowDto> =
+        client.get("$root/query/medical") {
+            category?.let { parameter("category", it) }
+        }.body()
+
+    suspend fun searchMemories(query: String): List<EventEnvelope> {
+        val hits: List<EventRowDto> = client.get("$root/query/events") {
+            parameter("limit", 100)
+        }.body()
+        return hits.map { it.toEventEnvelope() }.filter { event ->
+            val haystack = listOfNotNull(event.description, event.payload, event.location)
+                .joinToString(" ")
+                .lowercase()
+            query.lowercase().split(Regex("\\s+")).filter { it.isNotBlank() }.any { it in haystack }
+        }
+    }
+
     suspend fun acknowledgeEmergency(eventId: String, note: String): Result<Unit> = runCatching {
         val response = client.post("$root/query/ack-emergency") {
             contentType(ContentType.Application.Json)

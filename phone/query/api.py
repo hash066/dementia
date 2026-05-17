@@ -160,15 +160,20 @@ async def query_chat(q: str) -> StreamingResponse:
     async def tokens() -> AsyncIterator[str]:
         ctx = fts.search(get_db().raw, q, limit=5)
         mem = json.dumps(ctx, indent=2)[:4000]
-        prompt = f"""You are a helpful assistant for caregivers reviewing patient memories.
+        prompt = f"""You are Gemma running as a caregiver memory assistant for a dementia-support prototype.
 Relevant patient memories (JSON): {mem}
 Question: {q}
-Answer concisely:
+Reason over only these memories. Mention if the evidence is incomplete. Answer concisely:
 """
         client = get_gemma_client()
         text = await client.generate(prompt, max_tokens=256, temperature=0.3)
         if not text:
-            text = "No on-device model configured (PHONE_GEMMA_MODEL). Memories retrieved: " + str(len(ctx)) + " rows."
+            summaries = "; ".join(str(row.get("summary") or row.get("snippet") or row.get("type")) for row in ctx[:3])
+            text = (
+                "Gemma model not configured yet (set PHONE_GEMMA_MODEL to a local Gemma GGUF). "
+                f"Retrieved {len(ctx)} relevant memories. "
+                + (f"Top evidence: {summaries}" if summaries else "No matching memories found.")
+            )
         for word in text.split():
             yield f"data: {word}\n\n"
         yield "data: [DONE]\n\n"

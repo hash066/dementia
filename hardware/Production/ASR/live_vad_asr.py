@@ -61,6 +61,7 @@ def main() -> int:
     parser.add_argument("--out", default="transcript.txt", help="Output transcript file")
     parser.add_argument("--wav", default="", help="Optional WAV output path")
     parser.add_argument("--emit", default="", help="Phone intake base URL, e.g. http://127.0.0.1:8000")
+    parser.add_argument("--location", default="living room", help="Room label attached to emitted speech events")
     args = parser.parse_args()
 
     if not os.path.isdir(args.model):
@@ -102,7 +103,7 @@ def main() -> int:
         out_f.flush()
         last_written_text = text
         if emitter:
-            emitter.emit("SPEECH", {"transcript": text})
+            emitter.emit("SPEECH", {"transcript": text}, location=args.location)
 
     with open(args.out, "a", encoding="utf-8") as out_f:
         print("Listening... press Ctrl+C to stop")
