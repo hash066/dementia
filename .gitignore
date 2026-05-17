@@ -42,6 +42,6 @@ hardware/Software Tests/RtpVadAsr/model/
 hardware/Software Tests/RtpVadAsr/*.wav
 hardware/Software Tests/RtpVadAsr/*.zip
 hardware/Software Tests/RtpVadAsr/transcript.txt
-sementia/caregiver-app/.gradle/
-sementia/caregiver-app/build/
-sementia/caregiver-app/app/build/
+dementor/caregiver-app/.gradle/
+dementor/caregiver-app/build/
+dementor/caregiver-app/app/build/

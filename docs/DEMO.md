@@ -88,7 +88,7 @@ Speak near the mic. Press Ctrl+C once after speaking to flush the final/partial 
 Open Android Studio at:
 
 ```text
-sementia/caregiver-app
+dementor/caregiver-app
 ```
 
 Run the app. On the connect screen:
@@ -110,5 +110,5 @@ Invoke-RestMethod "http://127.0.0.1:8000/query/events?type=SPEECH&limit=5" | Con
 ## 7. Current Demo Boundaries
 
 - Camera capture is being validated manually; production event emission is next.
-- `sementia/hardware/rpi/` is architectural placeholder code, not the active runtime.
+- `dementor/hardware/rpi/` is architectural placeholder code, not the active runtime.
 - Home and medical dashboard screens still include demo/static cards; Timeline and Chat are the current live-data screens.

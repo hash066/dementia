@@ -38,7 +38,7 @@ This file is the short, current map of what is implemented. For the full runtime
 - Pi speaker/TTS command loop is not wired into the active production runtime yet.
 - Home screen and medical dashboard still contain static/demo UI elements.
 - Unsloth LoRA training/export is not complete.
-- `sementia/hardware/rpi/` is placeholder architecture scaffolding.
+- `dementor/hardware/rpi/` is placeholder architecture scaffolding.
 - Legacy duplicate folders still exist and should be removed or archived before final submission.
 - LAN auth/TLS and packaged deployment are not implemented.
 
@@ -46,7 +46,7 @@ This file is the short, current map of what is implemented. For the full runtime
 
 - Active phone core: `phone/`
 - Active hardware demo path: `hardware/Production/`
-- Active caregiver app: `sementia/caregiver-app/`
+- Active caregiver app: `dementor/caregiver-app/`
 - Contracts: `contracts/`
 - Current docs: `docs/`
 

@@ -108,7 +108,7 @@ elder-care/
 │   ├── build.gradle.kts
 │   ├── settings.gradle.kts
 │   └── app/
-│       └── src/main/java/com/sementia/caregiver/
+│       └── src/main/java/com/dementor/caregiver/
 │           ├── data/                     ← repositories, services, mocks, ML/LiteRT
 │           ├── domain/                   ← models, use cases
 │           └── ui/                       ← theme, screens, components

@@ -1,4 +1,4 @@
-# Sementia
+# Dementor
 
 Offline-first dementia-care prototype: ESP32/Raspberry Pi sensors emit memory and safety events to a local phone-core hub, and the caregiver Android app reads the resulting timeline, search, emergency state, and memory chat.
 
@@ -6,7 +6,7 @@ Offline-first dementia-care prototype: ESP32/Raspberry Pi sensors emit memory an
 
 - `phone/` - FastAPI phone-core hub: intake, validation, dedupe, SQLite/FTS5, Gemma routing, query APIs.
 - `hardware/Production/` - current working Raspberry Pi and ESP32 production demo path.
-- `sementia/caregiver-app/` - current Android caregiver app.
+- `dementor/caregiver-app/` - current Android caregiver app.
 - `contracts/` - shared event, HTTP, and DB contracts.
 - `docs/ARCHITECTURE.md` - current architecture and canonical paths.
 - `docs/DEMO.md` - complete end-to-end demo commands.
@@ -59,10 +59,10 @@ uv run pytest phone/tests -q
 Android app:
 
 ```powershell
-cd sementia/caregiver-app
+cd dementor/caregiver-app
 .\gradlew.bat testDebugUnitTest
 ```
 
 ## Safety Note
 
-Sementia is a caregiver-support prototype, not a diagnostic medical device. The system surfaces context and possible emergencies; it should not be presented as diagnosing dementia or making clinical decisions.
+Dementor is a caregiver-support prototype, not a diagnostic medical device. The system surfaces context and possible emergencies; it should not be presented as diagnosing dementia or making clinical decisions.

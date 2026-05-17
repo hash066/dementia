@@ -1,6 +1,6 @@
-# Sementia Architecture
+# Dementor Architecture
 
-Sementia is an offline-first dementia-care prototype. It turns home sensor signals into a private caregiver memory: speech, motion, emergency button events, and camera keyframes become searchable events that a caregiver can inspect and ask questions about.
+Dementor is an offline-first dementia-care prototype. It turns home sensor signals into a private caregiver memory: speech, motion, emergency button events, and camera keyframes become searchable events that a caregiver can inspect and ask questions about.
 
 ## Canonical Runtime
 
@@ -35,7 +35,7 @@ Use these paths for demos and new work:
 - `hardware/Production/CombinedStream/` - ESP32 Arduino sketch and Pi combined stream listener.
 - `hardware/Production/Shared/` - Pi EventEnvelope HTTP emitter.
 - `phone/` - phone core / hub service.
-- `sementia/caregiver-app/` - current Android caregiver app.
+- `dementor/caregiver-app/` - current Android caregiver app.
 - `contracts/` - wire/API/database contracts.
 
 ## Legacy And Planning Paths
@@ -43,10 +43,10 @@ Use these paths for demos and new work:
 These paths are retained for reference, but are not the current demo path:
 
 - `hardware/Hardware Tests/` and `hardware/Software Tests/` - bring-up experiments.
-- `sementia/hardware/rpi/` - planned modular RPi runtime; currently placeholder files.
-- `sementia/hardware/esp32/` - planned ESP-IDF firmware; current working firmware is Arduino under `hardware/Production/CombinedStream/`.
-- `sementia/caregiver-app-legacy/` - older React Native app.
-- `sementia/phone/` and `sementia/contracts/` - older duplicated copies of root `phone/` and `contracts/`.
+- `dementor/hardware/rpi/` - planned modular RPi runtime; currently placeholder files.
+- `dementor/hardware/esp32/` - planned ESP-IDF firmware; current working firmware is Arduino under `hardware/Production/CombinedStream/`.
+- `dementor/caregiver-app-legacy/` - older React Native app.
+- `dementor/phone/` and `dementor/contracts/` - older duplicated copies of root `phone/` and `contracts/`.
 
 Before submission, either remove the legacy copies or clearly label them in the repository UI so judges land on the active paths first.
 
@@ -70,4 +70,4 @@ The phone stores all raw envelopes in SQLite, indexes transcript and summary in 
 
 ## Safety And Privacy Position
 
-Sementia is not a diagnostic medical device. It supports caregivers by preserving context, surfacing possible emergencies, and summarizing memory signals. Sensitive data remains local to the user-controlled hub during the MVP; external model/API usage should be optional and explicit.
+Dementor is not a diagnostic medical device. It supports caregivers by preserving context, surfacing possible emergencies, and summarizing memory signals. Sensitive data remains local to the user-controlled hub during the MVP; external model/API usage should be optional and explicit.
