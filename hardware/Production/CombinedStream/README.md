@@ -52,6 +52,8 @@ ESP32 (UART2) -> Raspberry Pi UART0
 Button: GPIO4 to GND (INPUT_PULLUP)
 MPU6050: SDA=GPIO21, SCL=GPIO22
 
+The firmware enables `INPUT_PULLUP` for the button, so the normal unpressed state is HIGH and a press pulls GPIO4 to GND. Button readings are debounced in firmware for 60 ms before a rising press edge is sent to the Pi.
+
 ## ESP32 setup (Arduino IDE)
 
 1) Copy WIFI_CONFIG.example.h to WIFI_CONFIG.h and fill Wi-Fi + Pi IP.
@@ -150,6 +152,7 @@ Useful options:
 - `--port /dev/ttyUSB0` if you are using a USB-UART adapter instead of Pi UART0.
 - `--fall-accel-g 3.0` to make fall detection less sensitive.
 - `--fall-gyro-dps 220` to make rotation spikes less sensitive.
+- `--button-cooldown-sec 3.0` to ignore repeated button edges for longer after one emergency emit.
 
 ## Notes
 
@@ -157,3 +160,4 @@ Useful options:
 - Audio format: 16 kHz, stereo, signed 16-bit PCM (L16) over RTP.
 - The listener auto-restarts ffmpeg if it exits.
 - For phone integration, keep the phone core on the network and point the Pi emitter at `http://<phone-ip>:8000`.
+- If the button emits without being pressed, confirm the switch is wired between GPIO4 and GND, not GPIO4 and 3.3V. Keep the wire short or add an external 10k pull-up to 3.3V if the enclosure wiring is noisy.

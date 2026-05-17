@@ -39,7 +39,10 @@ static uint32_t rtp_ssrc = 0x12345678;
 static uint32_t packet_count = 0;
 
 static uint32_t last_imu_send_ms = 0;
-static bool last_button_state = false;
+static const uint32_t BUTTON_DEBOUNCE_MS = 60;
+static bool stable_button_state = false;
+static bool last_button_reading = false;
+static uint32_t last_button_change_ms = 0;
 
 uint16_t crc16_ccitt(const uint8_t* data, size_t len) {
   uint16_t crc = 0xFFFF;
@@ -160,9 +163,20 @@ void sendImuFrame(uint32_t now) {
   int16_t gyro_y = readI16(raw, 10);
   int16_t gyro_z = readI16(raw, 12);
 
-  bool button_pressed = (digitalRead(BUTTON_PIN) == LOW);
-  bool button_edge = (button_pressed && !last_button_state);
-  last_button_state = button_pressed;
+  bool button_reading = (digitalRead(BUTTON_PIN) == LOW);
+  if (button_reading != last_button_reading) {
+    last_button_reading = button_reading;
+    last_button_change_ms = now;
+  }
+
+  bool button_edge = false;
+  if ((now - last_button_change_ms) >= BUTTON_DEBOUNCE_MS && button_reading != stable_button_state) {
+    bool previous_state = stable_button_state;
+    stable_button_state = button_reading;
+    button_edge = (stable_button_state && !previous_state);
+  }
+
+  bool button_pressed = stable_button_state;
 
   imu_button_ImuButtonFrame frame = imu_button_ImuButtonFrame_init_zero;
   frame.ts_ms = now;
@@ -195,6 +209,9 @@ void setup() {
   UART_PORT.begin(UART_BAUD, SERIAL_8N1, UART_RX, UART_TX);
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  stable_button_state = (digitalRead(BUTTON_PIN) == LOW);
+  last_button_reading = stable_button_state;
+  last_button_change_ms = millis();
 
   Wire.begin();
   mpu6050Write(0x6B, 0x00); // wake up

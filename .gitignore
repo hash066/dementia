@@ -11,12 +11,37 @@ venv/
 *.egg-info/
 dist/
 build/
+.idea/
+.gradle/
+local.properties
+*.iml
+*.log
+*.tmp
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.dll
+*.class
+*.apk
+*.aab
+*.keystore
+*.jks
+*.DS_Store
 hardware/Hardware Tests/OpusRtpTest/WIFI_CONFIG.h
 hardware/Production/ASR/model/
 hardware/Production/ASR/*.wav
 hardware/Production/ASR/*.zip
 hardware/Production/ASR/transcript.txt
+hardware/Production/CombinedStream/WIFI_CONFIG.h
+hardware/Production/CombinedStream/imu_button.pb.c
+hardware/Production/CombinedStream/imu_button.pb.h
+hardware/Production/CombinedStream/imu_button_pb2.py
 hardware/Software Tests/RtpVadAsr/model/
 hardware/Software Tests/RtpVadAsr/*.wav
 hardware/Software Tests/RtpVadAsr/*.zip
 hardware/Software Tests/RtpVadAsr/transcript.txt
+sementia/caregiver-app/.gradle/
+sementia/caregiver-app/build/
+sementia/caregiver-app/app/build/

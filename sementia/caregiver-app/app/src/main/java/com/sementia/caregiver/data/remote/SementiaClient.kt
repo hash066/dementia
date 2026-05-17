@@ -11,7 +11,6 @@ import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsChannel
-import io.ktor.client.statement.execute
 import io.ktor.http.ContentType
 import io.ktor.http.isSuccess
 import io.ktor.http.contentType

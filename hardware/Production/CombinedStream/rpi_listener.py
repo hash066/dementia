@@ -35,6 +35,7 @@ GYRO_LSB_PER_DPS = 131.0
 DEFAULT_FALL_ACCEL_G = 2.7
 DEFAULT_FALL_GYRO_DPS = 180.0
 DEFAULT_FALL_COOLDOWN_SECONDS = 8.0
+DEFAULT_BUTTON_COOLDOWN_SECONDS = 2.0
 
 
 class SensorEventInterpreter:
@@ -44,12 +45,15 @@ class SensorEventInterpreter:
         fall_accel_g: float,
         fall_gyro_dps: float,
         fall_cooldown_seconds: float,
+        button_cooldown_seconds: float,
     ) -> None:
         self._emitter = emitter
         self._fall_accel_g = fall_accel_g
         self._fall_gyro_dps = fall_gyro_dps
         self._fall_cooldown_seconds = fall_cooldown_seconds
+        self._button_cooldown_seconds = button_cooldown_seconds
         self._last_fall_emit_monotonic = 0.0
+        self._last_button_emit_monotonic = 0.0
 
     def handle_frame(self, msg: imu_button_pb2.ImuButtonFrame) -> None:
         accel_g = vector_magnitude(msg.accel_x, msg.accel_y, msg.accel_z) / ACCEL_LSB_PER_G
@@ -64,7 +68,8 @@ class SensorEventInterpreter:
         if not self._emitter:
             return
 
-        if msg.button_edge:
+        if msg.button_edge and self._can_emit_button():
+            self._last_button_emit_monotonic = time.monotonic()
             ok = self._emitter.emit(
                 "EMERGENCY",
                 {"trigger_source": "wearable_button", "fsm_state": "EMERGENCY_REQUESTED"},
@@ -89,6 +94,9 @@ class SensorEventInterpreter:
         if time.monotonic() - self._last_fall_emit_monotonic < self._fall_cooldown_seconds:
             return False
         return accel_g >= self._fall_accel_g or gyro_dps >= self._fall_gyro_dps
+
+    def _can_emit_button(self) -> bool:
+        return time.monotonic() - self._last_button_emit_monotonic >= self._button_cooldown_seconds
 
 
 def vector_magnitude(x: float, y: float, z: float) -> float:
@@ -173,6 +181,7 @@ def main():
     parser.add_argument("--fall-accel-g", type=float, default=DEFAULT_FALL_ACCEL_G)
     parser.add_argument("--fall-gyro-dps", type=float, default=DEFAULT_FALL_GYRO_DPS)
     parser.add_argument("--fall-cooldown-sec", type=float, default=DEFAULT_FALL_COOLDOWN_SECONDS)
+    parser.add_argument("--button-cooldown-sec", type=float, default=DEFAULT_BUTTON_COOLDOWN_SECONDS)
     args = parser.parse_args()
 
     stop_event = threading.Event()
@@ -182,6 +191,7 @@ def main():
         fall_accel_g=args.fall_accel_g,
         fall_gyro_dps=args.fall_gyro_dps,
         fall_cooldown_seconds=args.fall_cooldown_sec,
+        button_cooldown_seconds=args.button_cooldown_sec,
     )
 
     ffmpeg = start_ffmpeg(args.sdp, args.ffmpeg)
