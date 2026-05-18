@@ -73,6 +73,11 @@ class DementorClient(
         }
     }
 
+    suspend fun fetchVoiceHistory(limit: Int = 30): List<EventEnvelope> =
+        client.get("$root/query/voice-conversations") {
+            parameter("limit", limit)
+        }.body<List<EventRowDto>>().map { it.toEventEnvelope() }
+
     suspend fun acknowledgeEmergency(eventId: String, note: String): Result<Unit> = runCatching {
         val response = client.post("$root/query/ack-emergency") {
             contentType(ContentType.Application.Json)

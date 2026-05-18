@@ -3,7 +3,7 @@ package com.dementor.caregiver.domain.model
 import java.time.Instant
 
 enum class EventType {
-    SPEECH, FALL, EMERGENCY, OBJECT, REMINDER, VITALS, SYSTEM
+    SPEECH, AUDIO, FALL, EMERGENCY, OBJECT, IMAGE, VIDEO, REMINDER, VITALS, SYSTEM
 }
 
 enum class Severity {

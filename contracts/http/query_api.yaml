@@ -120,7 +120,7 @@ components:
   schemas:
     EventType:
       type: string
-      enum: [SPEECH, FALL, EMERGENCY, OBJECT, REMINDER, VITALS, SYSTEM]
+      enum: [SPEECH, AUDIO, FALL, EMERGENCY, OBJECT, IMAGE, VIDEO, REMINDER, VITALS, SYSTEM]
     StatusResponse:
       type: object
       properties:

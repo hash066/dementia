@@ -29,6 +29,28 @@ def test_intake_speech_persist_and_search(client: TestClient) -> None:
     assert any("aspirin" in (h.get("snippet") or "").lower() or "aspirin" in (h.get("summary") or "").lower() for h in hits)
 
 
+def test_intake_audio_uses_gemma_structured_path(client: TestClient) -> None:
+    body = {
+        "event_id": str(uuid.uuid4()),
+        "ts": int(time.time() * 1000),
+        "type": "AUDIO",
+        "priority": "NORMAL",
+        "payload": {
+            "audio_base64": "AAAA",
+            "encoding": "pcm_s16le",
+            "sample_rate_hz": 16000,
+            "channels": 1,
+            "duration_sec": 0.1,
+            "location": "living room",
+        },
+    }
+    r = client.post("/intake/event", json=body)
+    assert r.status_code == 200, r.text
+    rows = client.get("/query/voice-conversations").json()
+    assert rows[0]["type"] == "AUDIO"
+    assert "Audio captured" in rows[0]["summary"]
+
+
 def test_duplicate_returns_409(client: TestClient) -> None:
     body = envelope_speech("duplicate test")
     assert client.post("/intake/event", json=body).status_code == 200

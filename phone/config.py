@@ -16,6 +16,10 @@ def phone_db_path() -> str:
     return os.environ.get("PHONE_DB_PATH", str(REPO_ROOT / "data" / "phone.db"))
 
 
+def phone_context_path() -> str:
+    return os.environ.get("PHONE_CONTEXT_PATH", str(REPO_ROOT / "data" / "context.jsonl"))
+
+
 def phone_db_key() -> str:
     return os.environ.get("PHONE_DB_KEY", "")
 

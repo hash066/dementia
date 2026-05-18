@@ -54,6 +54,7 @@ fun EventRowDto.toEventEnvelope(): EventEnvelope {
     val payloadObject = rawJson
         ?.let { runCatching { HubJson.parseToJsonElement(it).jsonObject["payload"]?.jsonObject }.getOrNull() }
     val keyframe = payloadObject?.get("keyframe")?.jsonPrimitive?.content
+        ?: payloadObject?.get("image_base64")?.jsonPrimitive?.content
     val location = payloadObject?.get("location")?.jsonPrimitive?.content
     return EventEnvelope(
         id = eventId,

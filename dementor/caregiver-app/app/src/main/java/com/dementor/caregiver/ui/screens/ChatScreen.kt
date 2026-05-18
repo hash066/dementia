@@ -24,42 +24,23 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ChatScreen(hubViewModel: HubViewModel) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val intentClassifier = remember { com.dementor.caregiver.data.ml.IntentClassifier(context) }
     val scope = rememberCoroutineScope()
     var inputText by remember { mutableStateOf("") }
     val messages = remember { mutableStateListOf<ChatMessage>() }
     var searchResults by remember { mutableStateOf<List<EventEnvelope>>(emptyList()) }
+    var voiceHistory by remember { mutableStateOf<List<EventEnvelope>>(emptyList()) }
     val listState = rememberLazyListState()
-    var detectedIntent by remember { mutableStateOf(com.dementor.caregiver.data.ml.ChatIntent.UNKNOWN) }
     val baseUrl by hubViewModel.baseUrl.collectAsState()
+
+    LaunchedEffect(baseUrl) {
+        voiceHistory = hubViewModel.fetchVoiceHistory()
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(WarmGrayBackground),
     ) {
-        if (detectedIntent != com.dementor.caregiver.data.ml.ChatIntent.UNKNOWN) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = if (detectedIntent == com.dementor.caregiver.data.ml.ChatIntent.EMERGENCY) {
-                    CriticalRed
-                } else {
-                    BluePrimary.copy(alpha = 0.1f)
-                },
-            ) {
-                Text(
-                    text = "On-Device Detection: ${detectedIntent.name}",
-                    modifier = Modifier.padding(8.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (detectedIntent == com.dementor.caregiver.data.ml.ChatIntent.EMERGENCY) {
-                        Color.White
-                    } else {
-                        BluePrimary
-                    },
-                )
-            }
-        }
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
@@ -89,6 +70,25 @@ fun ChatScreen(hubViewModel: HubViewModel) {
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (voiceHistory.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Voice conversation history",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = TextSecondary,
+                    )
+                }
+                items(voiceHistory.take(5), key = { "voice-${it.id}" }) { event ->
+                    Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text(event.description, style = MaterialTheme.typography.bodyMedium)
+                            event.location?.let {
+                                Text(it, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            }
+                        }
+                    }
+                }
+            }
             items(messages) { message ->
                 ChatBubble(message)
             }
@@ -130,7 +130,6 @@ fun ChatScreen(hubViewModel: HubViewModel) {
                     value = inputText,
                     onValueChange = {
                         inputText = it
-                        detectedIntent = intentClassifier.classifyIntent(it)
                     },
                     placeholder = { Text("Ask about Mom's day...") },
                     modifier = Modifier.weight(1f),

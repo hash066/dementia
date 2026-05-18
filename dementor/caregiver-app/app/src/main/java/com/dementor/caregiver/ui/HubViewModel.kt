@@ -83,6 +83,9 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun searchMemories(query: String): List<EventEnvelope> =
         clientOrNull()?.searchMemories(query) ?: emptyList()
 
+    suspend fun fetchVoiceHistory(): List<EventEnvelope> =
+        clientOrNull()?.fetchVoiceHistory() ?: emptyList()
+
     suspend fun acknowledgeEmergency(eventId: String, note: String) {
         clientOrNull()?.acknowledgeEmergency(eventId, note)?.getOrThrow()
     }

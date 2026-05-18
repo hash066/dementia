@@ -23,7 +23,9 @@ def tmp_db_path(tmp_path: Path) -> Generator[Path, None, None]:
     reset_deduper()
     reset_gemma_client()
     dbfile = tmp_path / "test.db"
+    context_file = tmp_path / "context.jsonl"
     os.environ["PHONE_DB_PATH"] = str(dbfile)
+    os.environ["PHONE_CONTEXT_PATH"] = str(context_file)
     os.environ["PHONE_USE_SQLCIPHER"] = ""
     os.environ["PHONE_DB_KEY"] = ""
     os.environ["PHONE_GEMMA_MODEL"] = ""

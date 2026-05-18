@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 
 from phone.actions import command_emitter
 from phone.gemma.client import get_gemma_client
+from phone.gemma import tools as gemma_tools
 from phone.gemma.router import ControlCommandOut
 from phone.memory import fts, upsert
 from phone.memory.db import get_db
@@ -84,11 +85,34 @@ async def query_events(
     return out
 
 
+@router.get("/voice-conversations")
+async def query_voice_conversations(limit: int = 30) -> list[dict[str, Any]]:
+    limit = min(max(limit, 1), 100)
+    db = get_db()
+    cur = db.raw.cursor()
+    rows = cur.execute(
+        """
+        SELECT event_id, ts, type, priority, raw_json, transcript, summary, entities
+        FROM events
+        WHERE type IN ('AUDIO', 'SPEECH')
+        ORDER BY ts DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    return [_row_to_dict(r) for r in rows]
+
+
 @router.get("/search")
 async def query_search(q: str, limit: int = 20) -> list[dict[str, Any]]:
     limit = min(max(limit, 1), 100)
     hits = fts.search(get_db().raw, q, limit=limit)
     return hits
+
+
+@router.get("/context")
+async def query_context(limit: int = 50) -> list[dict[str, Any]]:
+    return gemma_tools.read_context(limit=limit)
 
 
 @router.get("/medical")
@@ -159,8 +183,13 @@ async def query_chat(q: str) -> StreamingResponse:
 
     async def tokens() -> AsyncIterator[str]:
         ctx = fts.search(get_db().raw, q, limit=5)
+        durable_context = gemma_tools.read_context(limit=20)
         mem = json.dumps(ctx, indent=2)[:4000]
+        context_json = json.dumps(durable_context, indent=2)[:3000]
         prompt = f"""You are Gemma running as a caregiver memory assistant for a dementia-support prototype.
+Durable context JSONL entries:
+{context_json}
+
 Relevant patient memories (JSON): {mem}
 Question: {q}
 Reason over only these memories. Mention if the evidence is incomplete. Answer concisely:
@@ -174,6 +203,15 @@ Reason over only these memories. Mention if the evidence is incomplete. Answer c
                 f"Retrieved {len(ctx)} relevant memories. "
                 + (f"Top evidence: {summaries}" if summaries else "No matching memories found.")
             )
+        await gemma_tools.run_gemma_tools(
+            client,
+            source="caregiver_chat",
+            interaction={
+                "question": q,
+                "answer": text,
+                "retrieved_memories": ctx,
+            },
+        )
         for word in text.split():
             yield f"data: {word}\n\n"
         yield "data: [DONE]\n\n"

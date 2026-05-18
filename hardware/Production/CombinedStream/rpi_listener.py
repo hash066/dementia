@@ -121,7 +121,7 @@ class SensorEventInterpreter:
                 location=self._location,
                 trigger=trigger,
             )
-            print(f"emitted OBJECT {trigger} snapshot" if ok else f"failed to emit OBJECT {trigger} snapshot")
+            print(f"emitted IMAGE {trigger} snapshot" if ok else f"failed to emit IMAGE {trigger} snapshot")
         except Exception as exc:
             print(f"camera snapshot after {trigger} failed: {exc}")
 
@@ -211,7 +211,7 @@ def main():
     parser.add_argument("--button-cooldown-sec", type=float, default=DEFAULT_BUTTON_COOLDOWN_SECONDS)
     parser.add_argument("--location", default="living room", help="Room label attached to emitted events")
     parser.add_argument("--camera-device", default="/dev/video0", help="USB camera used for trigger snapshots")
-    parser.add_argument("--capture-on-trigger", action="store_true", help="Capture OBJECT keyframes on button/fall")
+    parser.add_argument("--capture-on-trigger", action="store_true", help="Capture IMAGE keyframes on button/fall")
     args = parser.parse_args()
 
     stop_event = threading.Event()

@@ -59,16 +59,16 @@ def emit_snapshot(
     keyframe = base64.b64encode(jpeg).decode("ascii")
     payload = {
         "label": "Scene captured",
-        "confidence": 1.0,
-        "keyframe": keyframe,
+        "image_base64": keyframe,
+        "mime_type": "image/jpeg",
         "location": location,
         "trigger": trigger,
     }
-    return emitter.emit("OBJECT", payload, priority="NORMAL")
+    return emitter.emit("IMAGE", payload, priority="NORMAL")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Capture Pi USB camera snapshots and emit OBJECT memory events.")
+    parser = argparse.ArgumentParser(description="Capture Pi USB camera snapshots and emit IMAGE events for phone Gemma.")
     parser.add_argument("--emit", required=True, help="Phone hub base URL, e.g. http://192.168.1.42:8000")
     parser.add_argument("--device", default="/dev/video0", help="V4L2 camera device")
     parser.add_argument("--location", default="living room", help="MVP room label stored with the event")
@@ -91,7 +91,7 @@ def main() -> int:
                     location=args.location,
                     trigger="interval" if args.interval_sec else "manual",
                 )
-                print("emitted OBJECT camera snapshot" if ok else "failed to emit OBJECT camera snapshot")
+                print("emitted IMAGE camera snapshot" if ok else "failed to emit IMAGE camera snapshot")
             except Exception as exc:
                 print(f"camera snapshot failed: {exc}", file=sys.stderr)
 

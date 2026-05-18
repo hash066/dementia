@@ -11,6 +11,7 @@ from pydantic import ValidationError
 
 from phone.actions import command_emitter
 from phone.gemma.client import get_gemma_client
+from phone.gemma import tools as gemma_tools
 from phone.gemma import router as gemma_router
 from phone.intake.deduper import get_deduper
 from phone.intake.validator import EventEnvelopeIn
@@ -89,5 +90,18 @@ async def intake_event(body: dict[str, Any]) -> JSONResponse:
 
     for cmd in route.commands:
         await command_emitter.send_command(cmd)
+
+    await gemma_tools.run_gemma_tools(
+        get_gemma_client(),
+        source="intake_event",
+        interaction={
+            "event_id": env.event_id,
+            "type": env.type,
+            "priority": route.priority or env.priority,
+            "summary": route.summary,
+            "transcript": route.transcript,
+            "entities": route.entities_json,
+        },
+    )
 
     return JSONResponse(status_code=200, content={"stored": True, "event_id": env.event_id})

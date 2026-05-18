@@ -3,12 +3,15 @@ package eldercare;
 
 enum EventType {
   SPEECH       = 0;
-  FALL         = 1;
-  EMERGENCY    = 2;
-  OBJECT       = 3;
-  REMINDER     = 4;
-  VITALS       = 5;
-  SYSTEM       = 6;
+  AUDIO        = 1;
+  FALL         = 2;
+  EMERGENCY    = 3;
+  OBJECT       = 4;
+  IMAGE        = 5;
+  VIDEO        = 6;
+  REMINDER     = 7;
+  VITALS       = 8;
+  SYSTEM       = 9;
 }
 
 enum Priority {
@@ -22,6 +25,20 @@ message SpeechPayload {
   string transcript   = 1;
   float  confidence   = 2;
   float  duration_sec = 3;
+}
+
+message AudioPayload {
+  string audio_base64   = 1;
+  string encoding       = 2;
+  int32  sample_rate_hz = 3;
+  int32  channels       = 4;
+  float  duration_sec   = 5;
+}
+
+message ImagePayload {
+  string image_base64 = 1;
+  string mime_type    = 2;
+  string location     = 3;
 }
 
 message FallPayload {
@@ -48,8 +65,10 @@ message EventEnvelope {
   Priority  priority = 4;
   oneof payload {
     SpeechPayload    speech    = 10;
-    FallPayload      fall      = 11;
-    ObjectPayload    object    = 12;
-    EmergencyPayload emergency = 13;
+    AudioPayload     audio     = 11;
+    FallPayload      fall      = 12;
+    ObjectPayload    object    = 13;
+    EmergencyPayload emergency = 14;
+    ImagePayload     image     = 15;
   }
 }

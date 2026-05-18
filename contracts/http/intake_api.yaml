@@ -81,7 +81,7 @@ components:
   schemas:
     EventType:
       type: string
-      enum: [SPEECH, FALL, EMERGENCY, OBJECT, REMINDER, VITALS, SYSTEM]
+      enum: [SPEECH, AUDIO, FALL, EMERGENCY, OBJECT, IMAGE, VIDEO, REMINDER, VITALS, SYSTEM]
     Priority:
       type: string
       enum: [LOW, NORMAL, HIGH, CRITICAL]
@@ -92,6 +92,16 @@ components:
         transcript: { type: string }
         confidence: { type: number, format: float }
         duration_sec: { type: number, format: float }
+    AudioPayload:
+      type: object
+      required: [audio_base64]
+      properties:
+        audio_base64: { type: string, description: base64 PCM audio for Gemma transcription }
+        encoding: { type: string, default: pcm_s16le }
+        sample_rate_hz: { type: integer, default: 16000 }
+        channels: { type: integer, default: 1 }
+        duration_sec: { type: number, format: float }
+        location: { type: string }
     FallPayload:
       type: object
       properties:
@@ -104,6 +114,15 @@ components:
         label: { type: string }
         confidence: { type: number, format: float }
         keyframe: { type: string, description: base64 JPEG optional }
+    ImagePayload:
+      type: object
+      required: [image_base64]
+      properties:
+        image_base64: { type: string, description: base64 image for Gemma vision analysis }
+        mime_type: { type: string, default: image/jpeg }
+        label: { type: string }
+        location: { type: string }
+        trigger: { type: string }
     EmergencyPayload:
       type: object
       properties:

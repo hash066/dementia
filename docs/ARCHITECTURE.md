@@ -10,15 +10,16 @@ ESP32 wearable/sensor node
   - IMU/button protobuf frames over UART
 
 Raspberry Pi edge bridge
-  - ASR from RTP audio
+  - raw audio capture from RTP audio
   - fall/button interpretation from UART
-  - future camera sampler
+  - camera sampler
   - emits EventEnvelope JSON to phone core
 
 Phone core / hub
   - FastAPI intake and query API
   - validates, dedupes, stores, and indexes events
-  - routes speech/object events through Gemma helpers
+  - routes audio/image/video/text events through Gemma 4 helpers
+  - asks Gemma to call `append_context` for durable patient/caregiver facts
   - exposes caregiver query/status/chat endpoints
 
 Caregiver Android app
@@ -31,7 +32,7 @@ Caregiver Android app
 
 Use these paths for demos and new work:
 
-- `hardware/Production/ASR/` - Pi ASR script using Vosk and the shared emitter.
+- `hardware/Production/ASR/` - Pi audio capture script; phone Gemma performs transcription/routing.
 - `hardware/Production/CombinedStream/` - ESP32 Arduino sketch and Pi combined stream listener.
 - `hardware/Production/Shared/` - Pi EventEnvelope HTTP emitter.
 - `phone/` - phone core / hub service.
@@ -43,12 +44,9 @@ Use these paths for demos and new work:
 These paths are retained for reference, but are not the current demo path:
 
 - `hardware/Hardware Tests/` and `hardware/Software Tests/` - bring-up experiments.
-- `dementor/hardware/rpi/` - planned modular RPi runtime; currently placeholder files.
-- `dementor/hardware/esp32/` - planned ESP-IDF firmware; current working firmware is Arduino under `hardware/Production/CombinedStream/`.
 - `dementor/caregiver-app-legacy/` - older React Native app.
-- `dementor/phone/` and `dementor/contracts/` - older duplicated copies of root `phone/` and `contracts/`.
 
-Before submission, either remove the legacy copies or clearly label them in the repository UI so judges land on the active paths first.
+The duplicated `dementor/phone`, `dementor/contracts`, and `dementor/hardware` trees were removed; the root paths are canonical.
 
 ## Event Contract
 
@@ -60,13 +58,16 @@ POST /intake/event
 
 Main event types:
 
-- `SPEECH`: ASR transcript.
+- `AUDIO`: raw PCM capture for Gemma transcription and response.
+- `SPEECH`: legacy/pre-transcribed text event.
 - `FALL`: IMU-derived possible fall.
 - `EMERGENCY`: button or emergency FSM signal.
-- `OBJECT`: camera/object/keyframe observation.
+- `IMAGE`: raw JPEG capture for Gemma scene/object classification.
+- `OBJECT`: legacy/pre-classified camera/object observation.
 - `REMINDER`, `VITALS`, `SYSTEM`: app/hub support events.
 
 The phone stores all raw envelopes in SQLite, indexes transcript and summary in FTS5, and exposes caregiver reads through `/query/*`.
+Durable preferences, safety facts, people, places, object locations, and medical signals are appended to `data/context.jsonl` through the Gemma `append_context` tool-call path.
 
 ## Safety And Privacy Position
 

@@ -86,7 +86,7 @@ Press the wearable button. The Pi should print:
 emitted EMERGENCY button event
 ```
 
-## 5. Run ASR Demo
+## 5. Run Gemma Audio Demo
 
 Run this separately from the combined listener while testing audio:
 
@@ -95,11 +95,10 @@ cd ~/Gemma/dementia/hardware/Production/ASR
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python download_vosk_model.py
-python live_vad_asr.py --sdp rtp_pcm.sdp --model model --out transcript.txt --wav capture.wav --emit http://<HUB_IP>:8000 --location "living room"
+python live_vad_asr.py --sdp rtp_pcm.sdp --emit http://<HUB_IP>:8000 --location "living room" --chunk-sec 4
 ```
 
-Speak near the mic. Press Ctrl+C once after speaking to flush the final/partial transcript.
+Speak near the mic. The Pi sends `AUDIO` chunks to the phone; phone Gemma returns the transcript, assistant response, timeline summary, medical entities, and priority.
 
 ## 6. Run Camera Snapshot Memory
 
@@ -113,7 +112,7 @@ pip install -r requirements.txt
 python camera_capture.py --emit http://<HUB_IP>:8000 --device /dev/video0 --location "living room" --interval-sec 300
 ```
 
-Use `--interval-sec 0` for one manual snapshot. The event type is `OBJECT`, label is `Scene captured`, and the app timeline renders the JPEG keyframe.
+Use `--interval-sec 0` for one manual snapshot. The event type is `IMAGE`; phone Gemma converts it into a timeline summary/classification and the app renders the JPEG keyframe.
 
 ## 7. Run Caregiver App
 
@@ -129,7 +128,7 @@ Run the app. On the connect screen:
 - Physical phone hub address: the laptop/hub LAN IP
 - PIN: any 4 digits for the MVP
 
-Open Activity Timeline. Emergency, fall, speech, and camera image events should appear. Expand an `OBJECT` card to see the keyframe.
+Open Activity Timeline. Emergency, fall, Gemma audio, and camera image events should appear. Expand an `IMAGE` card to see the keyframe.
 
 Open Memory Assistant and ask:
 
@@ -146,8 +145,10 @@ The app streams `/query/chat`; the phone core prompts Gemma over retrieved patie
 ```powershell
 Invoke-RestMethod "http://127.0.0.1:8000/query/status"
 Invoke-RestMethod "http://127.0.0.1:8000/query/events?limit=10" | ConvertTo-Json -Depth 5
-Invoke-RestMethod "http://127.0.0.1:8000/query/events?type=SPEECH&limit=5" | ConvertTo-Json -Depth 5
-Invoke-RestMethod "http://127.0.0.1:8000/query/events?type=OBJECT&limit=3" | ConvertTo-Json -Depth 5
+Invoke-RestMethod "http://127.0.0.1:8000/query/events?type=AUDIO&limit=5" | ConvertTo-Json -Depth 5
+Invoke-RestMethod "http://127.0.0.1:8000/query/events?type=IMAGE&limit=3" | ConvertTo-Json -Depth 5
+Invoke-RestMethod "http://127.0.0.1:8000/query/voice-conversations" | ConvertTo-Json -Depth 5
+Invoke-RestMethod "http://127.0.0.1:8000/query/context" | ConvertTo-Json -Depth 5
 ```
 
 ## 9. Emergency Loop

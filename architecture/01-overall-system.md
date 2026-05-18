@@ -14,7 +14,7 @@ flowchart LR
   end
 
   subgraph RPi["Raspberry Pi (stateless memory)"]
-    ING["Audio Ingest + VAD + ASR"]
+    ING["Audio Capture -> Gemma 4"]
     VSN["OpenCV Prefilter + Detector"]
     FSM["Emergency FSM + Priority Scheduler"]
     

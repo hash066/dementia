@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-EventType = Literal["SPEECH", "FALL", "EMERGENCY", "OBJECT", "REMINDER", "VITALS", "SYSTEM"]
+EventType = Literal["SPEECH", "AUDIO", "FALL", "EMERGENCY", "OBJECT", "IMAGE", "VIDEO", "REMINDER", "VITALS", "SYSTEM"]
 Priority = Literal["LOW", "NORMAL", "HIGH", "CRITICAL"]
 
 
@@ -14,6 +14,15 @@ class SpeechPayload(BaseModel):
     transcript: str = Field(min_length=1)
     confidence: float | None = None
     duration_sec: float | None = None
+
+
+class AudioPayload(BaseModel):
+    audio_base64: str = Field(min_length=1)
+    encoding: str = "pcm_s16le"
+    sample_rate_hz: int = 16000
+    channels: int = 1
+    duration_sec: float | None = None
+    location: str | None = None
 
 
 class FallPayload(BaseModel):
@@ -26,6 +35,21 @@ class ObjectPayload(BaseModel):
     label: str | None = None
     confidence: float | None = None
     keyframe: str | None = None
+
+
+class ImagePayload(BaseModel):
+    image_base64: str = Field(min_length=1)
+    mime_type: str = "image/jpeg"
+    label: str | None = None
+    location: str | None = None
+    trigger: str | None = None
+
+
+class VideoPayload(BaseModel):
+    video_base64: str = Field(min_length=1)
+    mime_type: str = "video/mp4"
+    duration_sec: float | None = None
+    location: str | None = None
 
 
 class EmergencyPayload(BaseModel):
@@ -72,12 +96,18 @@ class EventEnvelopeIn(BaseModel):
         p = self.payload
         if t == "SPEECH":
             SpeechPayload.model_validate(p)
+        elif t == "AUDIO":
+            AudioPayload.model_validate(p)
         elif t == "FALL":
             FallPayload.model_validate(p)
         elif t == "EMERGENCY":
             EmergencyPayload.model_validate(p)
         elif t == "OBJECT":
             ObjectPayload.model_validate(p)
+        elif t == "IMAGE":
+            ImagePayload.model_validate(p)
+        elif t == "VIDEO":
+            VideoPayload.model_validate(p)
         elif t == "REMINDER":
             ReminderPayload.model_validate(p)
         elif t in ("VITALS", "SYSTEM"):
@@ -86,6 +116,6 @@ class EventEnvelopeIn(BaseModel):
         return self
 
     def transcript_text(self) -> str | None:
-        if self.type != "SPEECH":
+        if self.type not in ("SPEECH", "AUDIO"):
             return None
         return str(self.payload.get("transcript") or "")

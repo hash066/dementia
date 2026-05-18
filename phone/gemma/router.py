@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
-from phone.gemma import classifier, orchestrator, specialist
+from phone.gemma import classifier, multimodal, orchestrator, specialist
 from phone.gemma.client import GemmaClient, get_orchestrator_client, get_specialist_client
 from phone.intake.validator import EventEnvelopeIn
 
@@ -90,6 +90,43 @@ async def route_event(env: EventEnvelopeIn, client: GemmaClient) -> RouteResult:
             lbl = str(env.payload.get("label") or "detection")
             res.medical_rows.append(
                 (eid, str(cls["medical_category"]), lbl, json.dumps(env.payload)[:500], ts)
+            )
+        return res
+
+    if env.type in ("AUDIO", "IMAGE", "VIDEO"):
+        modality = {"AUDIO": "audio", "IMAGE": "image", "VIDEO": "video"}[env.type]
+        mm = await multimodal.analyze_capture(client, modality=modality, payload=env.payload)
+        res.transcript = str(mm.get("transcript") or "") or None
+        res.summary = str(mm.get("caregiver_summary") or "")
+        res.entities_json = json.dumps(mm.get("entities") or [])
+        priority = str(mm.get("priority") or env.priority).upper()
+        if priority in ("LOW", "NORMAL", "HIGH", "CRITICAL"):
+            res.priority = priority
+        category = str(mm.get("medical_category") or "none")
+        if category not in ("none", ""):
+            label = modality
+            value = res.transcript or json.dumps({k: v for k, v in env.payload.items() if not k.endswith("_base64")})[:500]
+            res.medical_rows.append((eid, category, label, value, ts))
+        if mm.get("assistant_response"):
+            res.commands.append(
+                ControlCommandOut(
+                    command_id=str(uuid.uuid4()),
+                    ts=ts,
+                    type="SPEAK",
+                    text=str(mm["assistant_response"])[:500],
+                )
+            )
+        if bool(mm.get("action_required")) or res.priority in ("HIGH", "CRITICAL"):
+            res.set_active_emergency = True
+            res.set_fsm_state = "EMERGENCY_REQUESTED"
+            res.commands.append(
+                ControlCommandOut(
+                    command_id=str(uuid.uuid4()),
+                    ts=ts,
+                    type="ALERT_NOTIFY",
+                    text=res.summary or "Gemma flagged a safety event.",
+                    fsm_state="EMERGENCY_REQUESTED",
+                )
             )
         return res
 

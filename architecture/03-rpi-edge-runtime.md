@@ -9,13 +9,13 @@ flowchart TD
   end
 
   subgraph AudioPath
-    D["VAD"]
-    E["ASR (whisper.cpp)"]
+    D["PCM Chunk Capture"]
+    E["AUDIO EventEnvelope"]
   end
 
   subgraph VisionPath
-    F["OpenCV Prefilter (motion/quality/ROI)"]
-    G["Object Detector"]
+    F["JPEG/Frame Capture"]
+    G["IMAGE/VIDEO EventEnvelope"]
   end
 
   subgraph ControlPath
