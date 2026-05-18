@@ -229,10 +229,10 @@ function App() {
             >
               <h2>The Silent Epidemic of <span className="text-gradient">Caregiver Burnout</span></h2>
               <p>
-                Dementia doesn't just affect the patient; it consumes the caregiver. Constant vigilance, anxiety over wandering, and managing complex medical histories lead to severe emotional and physical exhaustion.
+                <strong>The Global Crisis:</strong> Dementia doesn't just affect the patient; it consumes the caregiver. According to the <a href="https://www.alz.org/help-support/caregiving/stages-behaviors/wandering" target="_blank" rel="noopener noreferrer" style={{textDecoration: 'underline', color: 'var(--text-primary)'}}>Alzheimer's Association</a>, 6 in 10 people with dementia will wander at least once, creating a constant state of hyper-vigilance for families worldwide.
               </p>
-              <p>
-                <strong>The Indian Context:</strong> According to recent studies, over 8.8 million adults are living with dementia in India—a number projected to double in the coming decades. The burden of care falls almost entirely on families due to a lack of formal care structures. A devastating reality reported by <a href="https://www.thenewsminute.com/news/dementia-and-missing-elderly-india-why-it-time-pay-attention-148148" target="_blank" rel="noopener noreferrer" style={{textDecoration: 'underline', color: 'var(--text-primary)'}}>The News Minute</a> reveals that thousands of elderly individuals go missing annually in India, heavily linked to dementia-related wandering. The fragmentation of passive alarms and disconnected apps leaves caregivers disastrously vulnerable.
+              <p style={{ marginTop: '1rem' }}>
+                <strong>The Indian Reality:</strong> This burden is drastically amplified in India, where over 8.8 million adults live with dementia without a formal institutional care structure. A devastating report by <a href="https://www.thenewsminute.com/news/dementia-and-missing-elderly-india-why-it-time-pay-attention-148148" target="_blank" rel="noopener noreferrer" style={{textDecoration: 'underline', color: 'var(--text-primary)'}}>The News Minute</a> reveals thousands of elderly individuals go missing annually. The fragmentation of passive alarms and disconnected apps leaves caregivers disastrously vulnerable.
               </p>
             </motion.div>
             <motion.div 
@@ -242,6 +242,10 @@ function App() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
+              <div className="stat-box" style={{ marginTop: 0 }}>
+                <div className="stat-number">6/10</div>
+                <div className="stat-label">patients worldwide will wander at least once (Alz.org)</div>
+              </div>
               <div className="stat-box">
                 <div className="stat-number">8.8M+</div>
                 <div className="stat-label">estimated individuals living with dementia in India</div>
