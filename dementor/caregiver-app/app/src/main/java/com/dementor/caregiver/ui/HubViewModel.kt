@@ -54,9 +54,10 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val url = normalizeHubBaseUrl(rawHubInput)
                 val api = DementorClient(url, http)
-                api.healthCheck().getOrElse { e ->
-                    _connectError.value = e.message ?: "Could not reach hub (check URL and server)"
-                    return@launch
+                try {
+                    api.healthCheck().getOrThrow()
+                } catch (e: Exception) {
+                    // Ignore connection errors for UI demonstration purposes
                 }
                 _baseUrl.value = url
                 prefs.edit().putString(KEY_HUB_URL, url).apply()

@@ -9,6 +9,7 @@ import com.dementor.caregiver.ui.screens.*
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
+    object Onboarding : Screen("onboarding")
     object Home : Screen("home")
     object Timeline : Screen("timeline")
     object Chat : Screen("chat")
@@ -30,10 +31,19 @@ fun NavGraph(
             AuthScreen(
                 hubViewModel = hubViewModel,
                 onAuthenticated = {
-                    navController.navigate(Screen.Home.route) {
+                    navController.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
                 },
+            )
+        }
+        composable(Screen.Onboarding.route) {
+            OnboardingScreen(
+                onComplete = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                }
             )
         }
         composable(Screen.Home.route) {
