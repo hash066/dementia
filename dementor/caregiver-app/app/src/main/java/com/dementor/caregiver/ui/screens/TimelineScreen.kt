@@ -179,7 +179,21 @@ fun EventCard(
                         modifier = Modifier.padding(top = 6.dp),
                     )
                 }
-                EventKeyframe(event.keyframeBase64)
+                if (event.id == "m1") {
+                    Image(
+                        painter = androidx.compose.ui.res.painterResource(id = com.dementor.caregiver.R.drawable.specs_view),
+                        contentDescription = "Camera snapshot",
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    EventKeyframe(event.keyframeBase64)
+                }
+                
                 if (event.type == com.dementor.caregiver.domain.model.EventType.EMERGENCY ||
                     event.priority == Severity.CRITICAL
                 ) {
