@@ -232,7 +232,7 @@ function App() {
                 Dementia doesn't just affect the patient; it consumes the caregiver. Constant vigilance, anxiety over wandering, and managing complex medical histories lead to severe emotional and physical exhaustion.
               </p>
               <p>
-                <strong>Real Case Study:</strong> In a stark investigative report by <a href="https://www.washingtonpost.com/investigations/interactive/2023/alzheimers-wandering-assisted-living/" target="_blank" rel="noopener noreferrer" style={{textDecoration: 'underline', color: 'var(--text-primary)'}}>The Washington Post</a>, it was revealed that over 2,000 dementia patients wandered from care facilities since 2018. The tragedy of Lynne Stewart, who walked out of a facility and suffered fatal hypothermia after alarms were ignored, highlights a systemic failure. The fragmentation of passive alarms, logs, and fragmented apps leaves caregivers and patients disastrously vulnerable.
+                <strong>The Indian Context:</strong> According to recent studies, over 8.8 million adults are living with dementia in India—a number projected to double in the coming decades. The burden of care falls almost entirely on families due to a lack of formal care structures. A devastating reality reported by <a href="https://www.thenewsminute.com/news/dementia-and-missing-elderly-india-why-it-time-pay-attention-148148" target="_blank" rel="noopener noreferrer" style={{textDecoration: 'underline', color: 'var(--text-primary)'}}>The News Minute</a> reveals that thousands of elderly individuals go missing annually in India, heavily linked to dementia-related wandering. The fragmentation of passive alarms and disconnected apps leaves caregivers disastrously vulnerable.
               </p>
             </motion.div>
             <motion.div 
@@ -243,12 +243,12 @@ function App() {
               transition={{ duration: 0.6, delay: 0.2 }}
             >
               <div className="stat-box">
-                <div className="stat-number">2,000+</div>
-                <div className="stat-label">reported wandering incidents in care facilities since 2018 (Washington Post)</div>
+                <div className="stat-number">8.8M+</div>
+                <div className="stat-label">estimated individuals living with dementia in India</div>
               </div>
               <div className="stat-box">
-                <div className="stat-number">6/10</div>
-                <div className="stat-label">Alzheimer's patients will wander at least once</div>
+                <div className="stat-number">30%</div>
+                <div className="stat-label">of severe caregiver burden is directly linked to wandering stress</div>
               </div>
             </motion.div>
           </div>
@@ -308,6 +308,44 @@ function App() {
                 <div className="feature-icon"><Smartphone /></div>
                 <h3>Native Clean UI</h3>
                 <p>Built with Jetpack Compose, the interface is deliberately minimalist, reducing cognitive load during high-stress moments.</p>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* System Architecture Section */}
+        <section className="section" id="architecture">
+          <div className="container">
+            <div className="features-header">
+              <span className="badge">Under The Hood</span>
+              <h2>A Masterpiece of Edge Engineering</h2>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                We didn't just build an app. We built a robust, offline-first IoT and AI pipeline designed for zero-latency crisis response.
+              </p>
+            </div>
+            <div className="features-grid" style={{ gridTemplateColumns: '1fr' }}>
+              <motion.div className="feature-card glass-panel" style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center', textAlign: 'left' }} whileHover={{ y: -5 }}>
+                <div className="feature-icon" style={{ minWidth: '80px', height: '80px', marginBottom: 0 }}><Cpu size={40} /></div>
+                <div style={{ flex: '1 1 300px' }}>
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Hardware Layer: ESP32 & Raspberry Pi Mesh</h3>
+                  <p>Our custom-programmed ESP32 edge nodes handle debounced physical inputs, continuous MPU6050 IMU fall detection, and Opus-encoded audio streaming over RTP. The Raspberry Pi acts as the local orchestrator, running real-time Voice Activity Detection (VAD) and a complex Finite State Machine (FSM) for hardware event synchronization.</p>
+                </div>
+              </motion.div>
+              
+              <motion.div className="feature-card glass-panel" style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center', textAlign: 'left' }} whileHover={{ y: -5 }}>
+                <div className="feature-icon" style={{ minWidth: '80px', height: '80px', marginBottom: 0 }}><Brain size={40} /></div>
+                <div style={{ flex: '1 1 300px' }}>
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>AI Layer: Gemma & LiteRT Specialist Agents</h3>
+                  <p>Unlike cloud-dependent apps, Dementor runs its intelligence locally. We fine-tuned specialized Gemma models for intent classification, utilizing Google's LiteRT for on-device inference. An autonomous specialist router directs queries—whether medical logs, immediate crisis intervention, or emotional summarization—ensuring absolute privacy and zero lag.</p>
+                </div>
+              </motion.div>
+
+              <motion.div className="feature-card glass-panel" style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center', textAlign: 'left' }} whileHover={{ y: -5 }}>
+                <div className="feature-icon" style={{ minWidth: '80px', height: '80px', marginBottom: 0 }}><Database size={40} /></div>
+                <div style={{ flex: '1 1 300px' }}>
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Data Layer: SQLite FTS5 Memory Engine</h3>
+                  <p>To give the AI perfect recall of a patient's history, we implemented a custom memory storage system built on SQLite with Full-Text Search 5 (FTS5). Caregiver intakes and real-time biometric events are instantly indexed, deduped, and made available for complex retrieval-augmented generation (RAG) queries directly on the phone.</p>
+                </div>
               </motion.div>
             </div>
           </div>
