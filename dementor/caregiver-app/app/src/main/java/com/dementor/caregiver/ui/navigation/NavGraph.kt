@@ -11,7 +11,6 @@ sealed class Screen(val route: String) {
     object Auth : Screen("auth")
     object Onboarding : Screen("onboarding")
     object Home : Screen("home")
-    object Tracking : Screen("tracking")
     object Timeline : Screen("timeline")
     object Chat : Screen("chat")
     object Medical : Screen("medical")
@@ -53,11 +52,7 @@ fun NavGraph(
                 onNavigateToChat = { navController.navigate(Screen.Chat.route) },
                 onNavigateToTimeline = { navController.navigate(Screen.Timeline.route) },
                 onNavigateToMedical = { navController.navigate(Screen.Medical.route) },
-                onNavigateToTracking = { navController.navigate(Screen.Tracking.route) }
             )
-        }
-        composable(Screen.Tracking.route) {
-            TrackingScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.Timeline.route) {
             TimelineScreen(hubViewModel = hubViewModel)

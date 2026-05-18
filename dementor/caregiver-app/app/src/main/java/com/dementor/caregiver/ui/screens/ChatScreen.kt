@@ -157,24 +157,26 @@ fun ChatScreen(hubViewModel: HubViewModel) {
                         scope.launch {
                             val assistantMsg = ChatMessage.Assistant("", isThinking = true)
                             messages.add(assistantMsg)
-                            
-                            val lowerQuery = query.lowercase()
-                            
-                            // Mock delays to simulate thinking
-                            kotlinx.coroutines.delay(1000)
-                            
-                            if (lowerQuery.contains("current activity trend") || lowerQuery.contains("moods")) {
-                                val response = "Over the last 7 days, she has maintained a mostly calm mood during mornings, completing her routine walks. However, I have detected mild agitation in the late afternoons (around 4 PM), which aligns with her sundowning profile. She has forgotten her spectacles twice on the dining table. I recommend ensuring the house is well-lit before dusk to reduce anxiety."
-                                messages[messages.lastIndex] = ChatMessage.Assistant(response, isThinking = false)
-                                searchResults = hubViewModel.searchMemories(query)
-                            } else if (lowerQuery.contains("lost") || lowerQuery.contains("park")) {
-                                val response = "EMERGENCY PROTOCOL ACTIVE: I am currently guiding her back. I have instructed her through the edge node to sit on the nearest bench and wait. I am keeping her calm by playing her favorite 60s music playlist. Please head to her live location immediately."
-                                messages[messages.lastIndex] = ChatMessage.Assistant(response, isThinking = false)
-                            } else {
-                                val response = "Based on the recent memory logs, she seems to be doing fine today. She took her Donepezil at 8:00 AM as scheduled."
-                                messages[messages.lastIndex] = ChatMessage.Assistant(response, isThinking = false)
+                            val api = hubViewModel.clientOrNull()
+                            if (api == null) {
+                                messages[messages.lastIndex] = ChatMessage.Assistant(
+                                    "Connect to the hub on the welcome screen to use memory chat.",
+                                    isThinking = false,
+                                )
+                                return@launch
                             }
-                            listState.animateScrollToItem(messages.size - 1)
+                            searchResults = api.searchMemories(query).take(5)
+                            var fullText = ""
+                            api.streamChat(query)
+                                .catch { e ->
+                                    emit("\nError: ${e.message ?: "chat failed"}")
+                                }
+                                .collect { chunk ->
+                                    fullText += chunk
+                                    messages[messages.lastIndex] =
+                                        ChatMessage.Assistant(fullText, isThinking = false)
+                                    listState.animateScrollToItem(messages.size - 1)
+                                }
                         }
                     },
                     colors = IconButtonDefaults.iconButtonColors(containerColor = BluePrimary),

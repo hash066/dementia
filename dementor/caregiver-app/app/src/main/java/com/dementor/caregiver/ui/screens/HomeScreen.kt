@@ -34,12 +34,10 @@ fun HomeScreen(
     onNavigateToChat: () -> Unit = {},
     onNavigateToTimeline: () -> Unit = {},
     onNavigateToMedical: () -> Unit = {},
-    onNavigateToTracking: () -> Unit = {},
 ) {
     var status by remember { mutableStateOf<HubStatusDto?>(null) }
     var recent by remember { mutableStateOf<EventEnvelope?>(null) }
     var medication by remember { mutableStateOf("No medication memories yet") }
-    var showEmergencyPopup by remember { mutableStateOf(false) }
 
     LaunchedEffect(hubViewModel) {
         status = hubViewModel.fetchStatus()
@@ -47,32 +45,7 @@ fun HomeScreen(
         recent = events.firstOrNull()
         medication = hubViewModel.fetchMedical("medication").firstOrNull()?.let {
             "${it.label}: ${it.value ?: "mentioned in memory"}"
-        } ?: "Donepezil 10mg taken at 8:00 AM (Accurate memory)"
-    }
-
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(30000)
-        showEmergencyPopup = true
-    }
-
-    if (showEmergencyPopup) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text("🚨 URGENT: WANDERING DETECTED", color = CriticalRed, fontWeight = FontWeight.Bold) },
-            text = { Text("Patient has left the geofenced area and is currently lost in the park. Live tracking and AI intervention are active.") },
-            confirmButton = {
-                Button(
-                    onClick = { 
-                        showEmergencyPopup = false
-                        onNavigateToTracking()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = CriticalRed)
-                ) {
-                    Text("Track Location")
-                }
-            },
-            containerColor = Color.White
-        )
+        } ?: "No medication memories yet"
     }
 
     Column(
