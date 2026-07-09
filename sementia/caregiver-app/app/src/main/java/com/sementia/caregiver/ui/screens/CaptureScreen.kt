@@ -41,6 +41,7 @@ fun CaptureScreen(
     val lastPeak by captureViewModel.lastPeak.collectAsState()
     val gpsFix by captureViewModel.location.lastFix.collectAsState()
     val gpsStatus by captureViewModel.location.status.collectAsState()
+    val demoMode by hubViewModel.demoMode.collectAsState()
 
     fun micGranted() = ContextCompat.checkSelfPermission(
         context, Manifest.permission.RECORD_AUDIO
@@ -57,7 +58,7 @@ fun CaptureScreen(
         if (!micOk) captureViewModel.appendLog("Audio permission denied", isError = true)
         if (!locOk) captureViewModel.appendLog("Location permission denied — events will have no GPS", isError = true)
         if (micOk && pendingStart) {
-            captureViewModel.startCapture(hubViewModel.clientOrNull())
+            captureViewModel.startCapture(hubViewModel.clientOrNull(), demoMode)
         }
         pendingStart = false
     }
@@ -69,7 +70,7 @@ fun CaptureScreen(
             if (!captureViewModel.location.hasPermission()) {
                 permissionLauncher.launch(CAPTURE_PERMISSIONS)
             }
-            captureViewModel.startCapture(hubViewModel.clientOrNull())
+            captureViewModel.startCapture(hubViewModel.clientOrNull(), demoMode)
         } else {
             pendingStart = true
             permissionLauncher.launch(CAPTURE_PERMISSIONS)
@@ -134,7 +135,7 @@ fun CaptureScreen(
                 Text(if (isCapturing) "Stop capture" else "Start capture")
             }
             OutlinedButton(
-                onClick = { captureViewModel.sendTestPing(hubViewModel.clientOrNull()) },
+                onClick = { captureViewModel.sendTestPing(hubViewModel.clientOrNull(), demoMode) },
                 enabled = !isCapturing,
             ) {
                 Text("Send test ping")

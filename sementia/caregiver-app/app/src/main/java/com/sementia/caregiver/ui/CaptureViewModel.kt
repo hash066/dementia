@@ -61,9 +61,9 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /** Starts the continuous record→locate→post loop. */
-    fun startCapture(client: SementiaClient?) {
+    fun startCapture(client: SementiaClient?, demoMode: Boolean = false) {
         if (_isCapturing.value) return
-        if (client == null) {
+        if (client == null && !demoMode) {
             appendLog("No hub connected — sign in with the hub address first", isError = true)
             return
         }
@@ -87,19 +87,28 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 if (locString == null) {
                     appendLog("Chunk #$chunkNo: no GPS fix yet — sending without location")
                 }
-                sendChunk(client, chunkNo, chunk, locString)
+                sendChunk(client, chunkNo, chunk, locString, demoMode)
             }
         }
     }
 
     private suspend fun sendChunk(
-        client: SementiaClient,
+        client: SementiaClient?,
         chunkNo: Int,
         chunk: AudioCaptureManager.Chunk,
         locString: String?,
+        demoMode: Boolean,
     ) {
-        val b64 = Base64.getEncoder().encodeToString(chunk.pcmBytes)
         val kb = chunk.pcmBytes.size / 1024
+        if (demoMode || client == null) {
+            _sentCount.value++
+            appendLog(
+                "Chunk #$chunkNo captured (${kb}KB, peak=${chunk.peakAmplitude}" +
+                    (locString?.let { ", gps=$it" } ?: "") + ") → accepted"
+            )
+            return
+        }
+        val b64 = Base64.getEncoder().encodeToString(chunk.pcmBytes)
         when (val result = client.postAudioEvent(b64, chunk.durationSec, locString)) {
             is IntakeResult.Accepted -> {
                 _sentCount.value++
@@ -132,8 +141,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
      * Posts a tiny silent audio event immediately — isolates connectivity and
      * validation problems from mic problems.
      */
-    fun sendTestPing(client: SementiaClient?) {
-        if (client == null) {
+    fun sendTestPing(client: SementiaClient?, demoMode: Boolean = false) {
+        if (client == null && !demoMode) {
             appendLog("No hub connected — sign in with the hub address first", isError = true)
             return
         }
@@ -148,6 +157,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 chunkNo = 0,
                 chunk = AudioCaptureManager.Chunk(silent, 0.1, 0),
                 locString = fix?.asPayloadString(),
+                demoMode = demoMode,
             )
         }
     }

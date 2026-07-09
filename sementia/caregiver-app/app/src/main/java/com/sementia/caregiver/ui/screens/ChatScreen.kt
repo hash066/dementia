@@ -31,6 +31,7 @@ fun ChatScreen(hubViewModel: HubViewModel) {
     var voiceHistory by remember { mutableStateOf<List<EventEnvelope>>(emptyList()) }
     val listState = rememberLazyListState()
     val baseUrl by hubViewModel.baseUrl.collectAsState()
+    val demoMode by hubViewModel.demoMode.collectAsState()
 
     LaunchedEffect(baseUrl) {
         voiceHistory = hubViewModel.fetchVoiceHistory()
@@ -51,7 +52,7 @@ fun ChatScreen(hubViewModel: HubViewModel) {
                     text = "Memory Assistant",
                     style = MaterialTheme.typography.headlineSmall,
                 )
-                if (baseUrl == null) {
+                if (baseUrl == null && !demoMode) {
                     Text(
                         text = "Sign in and connect to the hub to query patient memories.",
                         style = MaterialTheme.typography.bodySmall,
@@ -157,22 +158,10 @@ fun ChatScreen(hubViewModel: HubViewModel) {
                         scope.launch {
                             val assistantMsg = ChatMessage.Assistant("", isThinking = true)
                             messages.add(assistantMsg)
-                            val api = hubViewModel.clientOrNull()
-                            if (api == null) {
-                                messages[messages.lastIndex] = ChatMessage.Assistant(
-                                    "Connect to the hub on the welcome screen to use memory chat.",
-                                    isThinking = false,
-                                )
-                                return@launch
-                            }
-                            searchResults = try {
-                                api.searchMemories(query).take(5)
-                            } catch (e: Exception) {
-                                emptyList()
-                            }
+                            searchResults = hubViewModel.searchMemories(query).take(5)
                             var fullText = ""
                             try {
-                                api.streamChat(query)
+                                hubViewModel.streamChat(query)
                                     .catch { e ->
                                         emit("\nError: ${e.message ?: "chat failed"}")
                                     }

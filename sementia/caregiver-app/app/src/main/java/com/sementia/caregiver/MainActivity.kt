@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
             SementiaTheme {
                 val navController = rememberNavController()
                 val startDestination = remember {
-                    if (hubViewModel.savedHubUrlExists()) Screen.Home.route else Screen.Auth.route
+                    if (hubViewModel.shouldStartAtHome()) Screen.Home.route else Screen.Auth.route
                 }
                 val items = listOf(
                     Screen.Home to Icons.Default.Home,

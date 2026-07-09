@@ -101,7 +101,7 @@ fun DashboardHeader(status: HubStatusDto?) {
         Column(
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 48.dp, bottom = 28.dp),
         ) {
-            Text("Sementia Care", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+            Text("Dementor", style = MaterialTheme.typography.headlineSmall, color = Color.White)
             Spacer(modifier = Modifier.height(8.dp))
             Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.86f))
         }
