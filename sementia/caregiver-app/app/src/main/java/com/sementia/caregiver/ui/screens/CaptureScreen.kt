@@ -54,7 +54,7 @@ fun CaptureScreen(
         val locOk = grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
             captureViewModel.location.hasPermission()
-        if (!micOk) captureViewModel.appendLog("Microphone permission denied", isError = true)
+        if (!micOk) captureViewModel.appendLog("Audio permission denied", isError = true)
         if (!locOk) captureViewModel.appendLog("Location permission denied — events will have no GPS", isError = true)
         if (micOk && pendingStart) {
             captureViewModel.startCapture(hubViewModel.clientOrNull())
@@ -82,10 +82,9 @@ fun CaptureScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Phone Capture", style = MaterialTheme.typography.headlineSmall)
+        Text("Live Capture", style = MaterialTheme.typography.headlineSmall)
         Text(
-            "Uses this phone's microphone and GPS as the audio + location source " +
-                "and streams 10s chunks to the hub.",
+            "Streams live audio and location to the hub in 10-second chunks.",
             style = MaterialTheme.typography.bodySmall,
         )
 
@@ -109,7 +108,7 @@ fun CaptureScreen(
                 )
                 Text(text = gpsStatus, style = MaterialTheme.typography.bodySmall)
                 Text(
-                    text = "Sent: $sent   Failed: $failed   Mic peak: $lastPeak/32767",
+                    text = "Sent: $sent   Failed: $failed   Audio peak: $lastPeak/32767",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

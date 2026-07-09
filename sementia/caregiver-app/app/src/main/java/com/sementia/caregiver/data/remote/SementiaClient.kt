@@ -99,9 +99,9 @@ class SementiaClient(
     }
 
     /**
-     * Posts one phone-recorded audio chunk (with the phone's GPS location)
-     * to the hub intake endpoint. Never throws — every failure mode is folded
-     * into [IntakeResult] so the capture screen can show where the problem lies.
+     * Posts one captured audio chunk (with its GPS location) to the hub intake
+     * endpoint. Never throws — every failure mode is folded into [IntakeResult]
+     * so the capture screen can show where the problem lies.
      */
     suspend fun postAudioEvent(
         audioBase64: String,

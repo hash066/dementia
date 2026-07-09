@@ -16,8 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
 
 /**
- * GPS/location straight from the phone the app is installed on, using the
- * platform LocationManager (no Play Services dependency).
+ * GPS/location via the platform LocationManager (no Play Services dependency).
  */
 class LocationProvider(private val context: Context) {
 

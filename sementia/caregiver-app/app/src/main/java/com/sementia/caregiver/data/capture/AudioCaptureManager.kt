@@ -10,8 +10,8 @@ import kotlinx.coroutines.withContext
 import kotlin.math.abs
 
 /**
- * Records microphone audio on the phone itself in the exact format the hub's
- * AUDIO intake payload expects: PCM signed 16-bit little-endian, 16 kHz, mono.
+ * Records microphone audio in the exact format the hub's AUDIO intake payload
+ * expects: PCM signed 16-bit little-endian, 16 kHz, mono.
  */
 class AudioCaptureManager {
 

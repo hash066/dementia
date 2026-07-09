@@ -22,9 +22,9 @@ private const val CHUNK_SECONDS = 10
 private const val MAX_LOG_LINES = 200
 
 /**
- * Drives on-phone capture: records mic audio in chunks, stamps each chunk with
- * the phone's own GPS fix, and posts it to the hub as an AUDIO event. Every
- * step is written to a visible debug log so failures are easy to localize.
+ * Drives live capture: records audio in chunks, stamps each chunk with the
+ * current GPS fix, and posts it to the hub as an AUDIO event. Every step is
+ * written to a visible debug log so failures are easy to localize.
  */
 class CaptureViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -69,7 +69,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         }
         _isCapturing.value = true
         location.start()
-        appendLog("Capture started: ${CHUNK_SECONDS}s chunks, 16kHz mono PCM from this phone's mic")
+        appendLog("Capture started: ${CHUNK_SECONDS}s chunks, 16kHz mono PCM audio + GPS")
         captureJob = viewModelScope.launch {
             var chunkNo = 0
             while (isActive && _isCapturing.value) {
