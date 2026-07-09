@@ -26,6 +26,30 @@ data class AckEmergencyBody(
     @SerialName("note") val note: String = "",
 )
 
+/**
+ * Outgoing AUDIO payload for POST /intake/event — must match
+ * phone/intake/validator.py::AudioPayload on the hub.
+ */
+@Serializable
+data class AudioEventPayloadDto(
+    @SerialName("audio_base64") val audioBase64: String,
+    @SerialName("encoding") val encoding: String = "pcm_s16le",
+    @SerialName("sample_rate_hz") val sampleRateHz: Int = 16_000,
+    @SerialName("channels") val channels: Int = 1,
+    @SerialName("duration_sec") val durationSec: Double? = null,
+    @SerialName("location") val location: String? = null,
+)
+
+/** Outgoing envelope for POST /intake/event (validator.py::EventEnvelopeIn). */
+@Serializable
+data class AudioEventEnvelopeDto(
+    @SerialName("event_id") val eventId: String,
+    @SerialName("ts") val ts: Long,
+    @SerialName("type") val type: String = "AUDIO",
+    @SerialName("priority") val priority: String = "NORMAL",
+    @SerialName("payload") val payload: AudioEventPayloadDto,
+)
+
 @Serializable
 data class HubStatusDto(
     @SerialName("last_event_ts") val lastEventTs: Long? = null,

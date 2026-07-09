@@ -11,6 +11,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.isSuccess
 import io.ktor.http.contentType
@@ -20,6 +21,15 @@ import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
+import java.util.UUID
+
+/** Detailed outcome of one intake POST, surfaced in the capture debug log. */
+sealed class IntakeResult {
+    data class Accepted(val eventId: String) : IntakeResult()
+    data class Duplicate(val eventId: String) : IntakeResult()
+    data class Rejected(val httpStatus: Int, val body: String) : IntakeResult()
+    data class TransportError(val message: String) : IntakeResult()
+}
 
 val HubJson: Json = Json {
     ignoreUnknownKeys = true
@@ -86,6 +96,44 @@ class SementiaClient(
         if (!response.status.isSuccess()) {
             error("Ack failed: HTTP ${response.status.value}")
         }
+    }
+
+    /**
+     * Posts one phone-recorded audio chunk (with the phone's GPS location)
+     * to the hub intake endpoint. Never throws — every failure mode is folded
+     * into [IntakeResult] so the capture screen can show where the problem lies.
+     */
+    suspend fun postAudioEvent(
+        audioBase64: String,
+        durationSec: Double?,
+        location: String?,
+        eventId: String = UUID.randomUUID().toString(),
+        tsMs: Long = System.currentTimeMillis(),
+    ): IntakeResult = try {
+        val response = client.post("$root/intake/event") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                AudioEventEnvelopeDto(
+                    eventId = eventId,
+                    ts = tsMs,
+                    payload = AudioEventPayloadDto(
+                        audioBase64 = audioBase64,
+                        durationSec = durationSec,
+                        location = location,
+                    ),
+                )
+            )
+        }
+        when {
+            response.status.isSuccess() -> IntakeResult.Accepted(eventId)
+            response.status.value == 409 -> IntakeResult.Duplicate(eventId)
+            else -> IntakeResult.Rejected(
+                httpStatus = response.status.value,
+                body = runCatching { response.bodyAsText() }.getOrDefault("").take(500),
+            )
+        }
+    } catch (e: Exception) {
+        IntakeResult.TransportError(e.message ?: e::class.simpleName ?: "unknown error")
     }
 
     /**

@@ -16,6 +16,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.sementia.caregiver.ui.CaptureViewModel
 import com.sementia.caregiver.ui.HubViewModel
 import com.sementia.caregiver.ui.navigation.NavGraph
 import com.sementia.caregiver.ui.navigation.Screen
@@ -24,6 +25,10 @@ import com.sementia.caregiver.ui.theme.SementiaTheme
 class MainActivity : ComponentActivity() {
 
     private val hubViewModel: HubViewModel by viewModels {
+        ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+    }
+
+    private val captureViewModel: CaptureViewModel by viewModels {
         ViewModelProvider.AndroidViewModelFactory.getInstance(application)
     }
 
@@ -38,6 +43,7 @@ class MainActivity : ComponentActivity() {
                 val items = listOf(
                     Screen.Home to Icons.Default.Home,
                     Screen.Timeline to Icons.Default.Timeline,
+                    Screen.Capture to Icons.Default.Mic,
                     Screen.Chat to Icons.Default.Chat,
                     Screen.Medical to Icons.Default.MedicalServices,
                     Screen.Settings to Icons.Default.Settings
@@ -75,6 +81,7 @@ class MainActivity : ComponentActivity() {
                         NavGraph(
                             navController = navController,
                             hubViewModel = hubViewModel,
+                            captureViewModel = captureViewModel,
                             startDestination = startDestination,
                         )
                     }

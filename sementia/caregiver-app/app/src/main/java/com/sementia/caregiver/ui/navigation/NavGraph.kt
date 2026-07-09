@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.sementia.caregiver.ui.CaptureViewModel
 import com.sementia.caregiver.ui.HubViewModel
 import com.sementia.caregiver.ui.screens.*
 
@@ -12,6 +13,7 @@ sealed class Screen(val route: String) {
     object Onboarding : Screen("onboarding")
     object Home : Screen("home")
     object Timeline : Screen("timeline")
+    object Capture : Screen("capture")
     object Chat : Screen("chat")
     object Medical : Screen("medical")
     object Settings : Screen("settings")
@@ -21,6 +23,7 @@ sealed class Screen(val route: String) {
 fun NavGraph(
     navController: NavHostController,
     hubViewModel: HubViewModel,
+    captureViewModel: CaptureViewModel,
     startDestination: String,
 ) {
     NavHost(
@@ -56,6 +59,12 @@ fun NavGraph(
         }
         composable(Screen.Timeline.route) {
             TimelineScreen(hubViewModel = hubViewModel)
+        }
+        composable(Screen.Capture.route) {
+            CaptureScreen(
+                hubViewModel = hubViewModel,
+                captureViewModel = captureViewModel,
+            )
         }
         composable(Screen.Chat.route) {
             ChatScreen(hubViewModel = hubViewModel)
