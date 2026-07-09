@@ -165,18 +165,29 @@ fun ChatScreen(hubViewModel: HubViewModel) {
                                 )
                                 return@launch
                             }
-                            searchResults = api.searchMemories(query).take(5)
+                            searchResults = try {
+                                api.searchMemories(query).take(5)
+                            } catch (e: Exception) {
+                                emptyList()
+                            }
                             var fullText = ""
-                            api.streamChat(query)
-                                .catch { e ->
-                                    emit("\nError: ${e.message ?: "chat failed"}")
-                                }
-                                .collect { chunk ->
-                                    fullText += chunk
-                                    messages[messages.lastIndex] =
-                                        ChatMessage.Assistant(fullText, isThinking = false)
-                                    listState.animateScrollToItem(messages.size - 1)
-                                }
+                            try {
+                                api.streamChat(query)
+                                    .catch { e ->
+                                        emit("\nError: ${e.message ?: "chat failed"}")
+                                    }
+                                    .collect { chunk ->
+                                        fullText += chunk
+                                        messages[messages.lastIndex] =
+                                            ChatMessage.Assistant(fullText, isThinking = false)
+                                        listState.animateScrollToItem(messages.size - 1)
+                                    }
+                            } catch (e: Exception) {
+                                messages[messages.lastIndex] = ChatMessage.Assistant(
+                                    "Couldn't reach the hub: ${e.message ?: "chat failed"}",
+                                    isThinking = false,
+                                )
+                            }
                         }
                     },
                     colors = IconButtonDefaults.iconButtonColors(containerColor = BluePrimary),

@@ -72,20 +72,39 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clientOrNull(): SementiaClient? = _baseUrl.value?.let { SementiaClient(it, http) }
 
+    /** Last network error, so screens can show a banner instead of crashing. */
+    private val _lastError = MutableStateFlow<String?>(null)
+    val lastError: StateFlow<String?> = _lastError.asStateFlow()
+
+    /**
+     * Runs a hub call, swallowing any exception (unreachable hub, timeout,
+     * bad response) and returning [fallback] instead. Without this, an uncaught
+     * exception in a screen's coroutine crashes the whole app.
+     */
+    private suspend fun <T> safeCall(fallback: T, block: suspend (SementiaClient) -> T): T {
+        val api = clientOrNull() ?: return fallback
+        return try {
+            block(api).also { _lastError.value = null }
+        } catch (e: Exception) {
+            _lastError.value = e.message ?: "Hub request failed"
+            fallback
+        }
+    }
+
     suspend fun fetchEvents(): List<EventEnvelope> =
-        clientOrNull()?.fetchEvents() ?: emptyList()
+        safeCall(emptyList()) { it.fetchEvents() }
 
     suspend fun fetchStatus(): HubStatusDto? =
-        clientOrNull()?.fetchStatus()
+        safeCall(null) { it.fetchStatus() }
 
     suspend fun fetchMedical(category: String? = null): List<MedicalRowDto> =
-        clientOrNull()?.fetchMedical(category) ?: emptyList()
+        safeCall(emptyList()) { it.fetchMedical(category) }
 
     suspend fun searchMemories(query: String): List<EventEnvelope> =
-        clientOrNull()?.searchMemories(query) ?: emptyList()
+        safeCall(emptyList()) { it.searchMemories(query) }
 
     suspend fun fetchVoiceHistory(): List<EventEnvelope> =
-        clientOrNull()?.fetchVoiceHistory() ?: emptyList()
+        safeCall(emptyList()) { it.fetchVoiceHistory() }
 
     suspend fun acknowledgeEmergency(eventId: String, note: String) {
         clientOrNull()?.acknowledgeEmergency(eventId, note)?.getOrThrow()
